@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,17 +39,18 @@ jobs:
         run: |
           npx capacitor sync android
 
-      - name: Restore or Generate Release Keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate or Restore Keystore
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Restoring keystore from secret..."
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/trip-release.keystore
+          KEYSTORE_PATH="android/trip-release.keystore"
+          if [ -f "$KEYSTORE_PATH" ]; then
+            echo "✅ Keystore already exists in repo, reusing it."
           else
-            echo "No keystore secret found, generating a new one..."
+            echo "🔑 Generating new keystore..."
             keytool -genkeypair -v \
-              -keystore android/trip-release.keystore \
+              -keystore "$KEYSTORE_PATH" \
               -alias trip-key \
               -keyalg RSA \
               -keysize 2048 \
@@ -55,27 +58,24 @@ jobs:
               -storepass TripApp2024! \
               -keypass TripApp2024! \
               -dname "CN=Trip App, OU=Mobile, O=Trip, L=Brazil, S=SP, C=BR"
-            echo "=== IMPORTANT: Add this base64 to GitHub Secrets as KEYSTORE_BASE64 ==="
-            base64 -w 0 android/trip-release.keystore
-            echo ""
+
+            echo "📦 Committing keystore to repo so future builds reuse it..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$KEYSTORE_PATH"
+            git commit -m "ci: add persistent release keystore for consistent APK signing [skip ci]"
+            git push
           fi
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build Signed APK (Release)
-        env:
-          KEY_ALIAS: trip-key
-          KEY_PASSWORD: TripApp2024!
-          STORE_PASSWORD: TripApp2024!
+      - name: Build Signed Release APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/trip-release.keystore \
-            -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+            -Pandroid.injected.signing.store.password=TripApp2024! \
+            -Pandroid.injected.signing.key.alias=trip-key \
+            -Pandroid.injected.signing.key.password=TripApp2024!
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
