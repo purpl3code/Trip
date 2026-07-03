@@ -10,7 +10,7 @@ import { AuthView } from './components/AuthView';
 import { Compass, Users, Sparkles, MapPin } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, setActiveTab, selectedUser, currentUser, isSessionLoading } = useApp();
+  const { posts, activeTab, selectedUser, currentUser, isSessionLoading } = useApp();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedType, setFeedType] = useState<'global' | 'following'>('global');
 
@@ -134,18 +134,6 @@ function App() {
           {/* Profile View */}
           {activeTab === 'profile' && (
             <div className="space-y-6">
-              {/* Back to feed header on profiles - hide if viewing own profile */}
-              {selectedUser && currentUser && selectedUser.id !== currentUser.id && (
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setActiveTab('feed')}
-                    className="text-xs font-bold text-indigo-500 hover:underline"
-                  >
-                    ← Voltar para a Linha do Tempo
-                  </button>
-                </div>
-              )}
-
               {selectedUser && <UserProfile user={selectedUser} />}
             </div>
           )}
