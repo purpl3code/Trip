@@ -34,10 +34,10 @@ export const AuthView: React.FC = () => {
         
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="bg-gradient-to-tr from-indigo-500 to-pink-500 p-3 rounded-2xl shadow-lg shadow-indigo-500/20 mb-3">
+          <div className="bg-black dark:bg-slate-900 p-3 rounded-2xl shadow-lg border border-white/10 dark:border-white/5 mb-3">
             <Compass className="w-8 h-8 text-white animate-spin-slow" />
           </div>
-          <h1 className="text-3xl font-black bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-widest">
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-widest">
             TRIP
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-widest uppercase mt-1">

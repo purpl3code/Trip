@@ -21,11 +21,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewPost }) => {
       <div className="flex flex-col gap-8">
         {/* Logo */}
         <div className="flex items-center gap-3 pl-2">
-          <div className="bg-gradient-to-tr from-indigo-500 to-pink-500 p-2.5 rounded-2xl shadow-lg shadow-indigo-500/20">
+          <div className="bg-black dark:bg-slate-900 p-2.5 rounded-2xl shadow-lg border border-white/10 dark:border-white/5">
             <Compass className="w-6 h-6 text-white animate-spin-slow" />
           </div>
           <div>
-            <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-wider">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-wider">
               TRIP
             </h1>
             <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium tracking-widest uppercase">

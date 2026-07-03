@@ -2,16 +2,14 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { User } from '../mockData';
 import { Star, MapPin, Grid, UserPlus, UserCheck, Calendar, LogOut } from 'lucide-react';
-import { EditProfileModal } from './EditProfileModal';
 
 interface UserProfileProps {
   user: User;
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
-  const { posts, currentUser, toggleFollow, handleSignOut } = useApp();
+  const { posts, currentUser, toggleFollow, handleSignOut, setIsEditProfileOpen } = useApp();
   const [profileTab, setProfileTab] = useState<'moments' | 'gallery'>('moments');
-  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const isOwnProfile = user.id === currentUser?.id;
 
@@ -113,7 +111,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
             ) : (
               <div className="flex gap-2">
                 <button
-                  onClick={() => setIsEditOpen(true)}
+                  onClick={() => setIsEditProfileOpen(true)}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-white/20 dark:bg-white/5 border border-white/30 dark:border-white/10 text-gray-800 dark:text-white hover:bg-white/35 dark:hover:bg-white/15 transition-all shadow-sm duration-300"
                 >
                   <span>Editar Perfil</span>
@@ -266,9 +264,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
           </div>
         )
       )}
-
-      {/* Edit Profile Modal Dialog */}
-      <EditProfileModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} />
     </div>
   );
 };

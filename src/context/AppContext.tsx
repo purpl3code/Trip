@@ -50,6 +50,8 @@ interface AppContextType {
     bannerFile?: File
   ) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
+  isEditProfileOpen: boolean;
+  setIsEditProfileOpen: (isOpen: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -64,6 +66,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // UI state
   const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // App core data states
   const [posts, setPosts] = useState<Post[]>([]);
@@ -363,6 +366,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (profileError) {
         console.warn('Profile direct insert failed, will trigger on-the-fly upon email validation login:', profileError.message);
       }
+
+      // 4. Automatically log the user in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
 
     } catch (e: any) {
       setAuthError(e.message);
@@ -781,6 +792,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshData,
         updateProfile,
         deletePost,
+        isEditProfileOpen,
+        setIsEditProfileOpen,
       }}
     >
       {children}

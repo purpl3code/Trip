@@ -5,12 +5,13 @@ import { BottomNav } from './components/BottomNav';
 import { PostCard } from './components/PostCard';
 import { UserProfile } from './components/UserProfile';
 import { NewPostModal } from './components/NewPostModal';
+import { EditProfileModal } from './components/EditProfileModal';
 import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
 import { Compass, Users, Sparkles, MapPin } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, selectedUser, currentUser, isSessionLoading } = useApp();
+  const { posts, activeTab, selectedUser, currentUser, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen } = useApp();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedType, setFeedType] = useState<'global' | 'following'>('global');
 
@@ -53,10 +54,10 @@ function App() {
         {/* Top Header Bar */}
         <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="bg-gradient-to-tr from-indigo-500 to-pink-500 p-1.5 rounded-lg">
+            <div className="bg-black dark:bg-slate-900 p-1.5 rounded-lg border border-white/10 dark:border-white/5">
               <Compass className="w-5 h-5 text-white animate-spin-slow" />
             </div>
-            <span className="text-lg font-black bg-gradient-to-r from-indigo-500 to-pink-500 bg-clip-text text-transparent tracking-widest">
+            <span className="text-lg font-black text-gray-900 dark:text-white tracking-widest">
               TRIP
             </span>
           </div>
@@ -146,6 +147,9 @@ function App() {
 
       {/* New Post Dialog Modal */}
       <NewPostModal isOpen={isNewPostOpen} onClose={() => setIsNewPostOpen(false)} />
+
+      {/* Edit Profile Dialog Modal */}
+      <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
     </div>
   );
 }

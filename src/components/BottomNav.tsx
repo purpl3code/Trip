@@ -44,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenNewPost }) => {
       <div className="flex-1 flex justify-center -translate-y-4">
         <button
           onClick={onOpenNewPost}
-          className="bg-gradient-to-tr from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white p-3.5 rounded-full shadow-lg shadow-purple-500/30 transform active:scale-95 transition-all duration-200 border-4 border-[#f3f4f6] dark:border-[#13151a]"
+          className="bg-black hover:bg-slate-900 text-white p-3.5 rounded-full shadow-lg shadow-black/20 transform active:scale-95 transition-all duration-200 border-4 border-[#f3f4f6] dark:border-[#13151a]"
         >
           <Plus className="w-6 h-6" />
         </button>
