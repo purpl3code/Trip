@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Link as LinkIcon, Upload } from 'lucide-react';
 
@@ -28,6 +28,18 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
   const [customPhotoUrl, setCustomPhotoUrl] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

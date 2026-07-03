@@ -90,7 +90,7 @@ export const SearchView: React.FC = () => {
           onChange={(e) => setQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-4 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all shadow-inner placeholder-gray-400 dark:placeholder-gray-500"
         />
-        <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
       </div>
 
       {/* Filter Tabs */}
@@ -192,14 +192,14 @@ export const SearchView: React.FC = () => {
                   >
                     <button
                       onClick={() => handleUserClick(user)}
-                      className="flex items-center gap-3 text-left hover:opacity-85"
+                      className="flex items-center gap-3 text-left hover:opacity-85 min-w-0 flex-1 mr-3"
                     >
-                      <img src={user.avatar} alt={user.displayName} className="w-10 h-10 rounded-xl object-cover" />
-                      <div>
-                        <h4 className="font-extrabold text-xs text-gray-800 dark:text-white leading-tight">
+                      <img src={user.avatar} alt={user.displayName} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-xs text-gray-800 dark:text-white leading-tight truncate">
                           {user.displayName}
                         </h4>
-                        <p className="text-[10px] text-gray-400">@{user.username}</p>
+                        <p className="text-[10px] text-gray-400 truncate">@{user.username}</p>
                       </div>
                     </button>
 
