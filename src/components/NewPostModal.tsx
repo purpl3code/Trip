@@ -7,23 +7,13 @@ interface NewPostModalProps {
   onClose: () => void;
 }
 
-// Preset images for easy mock testing
-const PRESET_IMAGES = [
-  { url: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=400&q=80', label: 'Montanhas' },
-  { url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=400&q=80', label: 'Floresta' },
-  { url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80', label: 'Paris' },
-  { url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=400&q=80', label: 'Tóquio' },
-  { url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&q=80', label: 'Ramen' },
-  { url: 'https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=400&q=80', label: 'Cafeteria' },
-];
-
 export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) => {
   const { addPost } = useApp();
   const [content, setContent] = useState('');
   const [location, setLocation] = useState('');
   const [rating, setRating] = useState(5);
   const [verdict, setVerdict] = useState<'Gostei' | 'Não gostei'>('Gostei');
-  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [customPhotoUrls, setCustomPhotoUrls] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [customPhotoUrl, setCustomPhotoUrl] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -49,14 +39,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
 
     setIsSubmitting(true);
     try {
-      await addPost(content, location, rating, verdict, selectedPhotos, photoFiles);
+      await addPost(content, location, rating, verdict, customPhotoUrls, photoFiles);
       
       // Reset form
       setContent('');
       setLocation('');
       setRating(5);
       setVerdict('Gostei');
-      setSelectedPhotos([]);
+      setCustomPhotoUrls([]);
       setPhotoFiles([]);
       setCustomPhotoUrl('');
       setShowCustomInput(false);
@@ -68,15 +58,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const togglePresetImage = (url: string) => {
-    setSelectedPhotos((prev) =>
-      prev.includes(url) ? prev.filter((p) => p !== url) : [...prev, url]
-    );
-  };
-
   const handleAddCustomPhoto = () => {
     if (customPhotoUrl.trim()) {
-      setSelectedPhotos((prev) => [...prev, customPhotoUrl.trim()]);
+      setCustomPhotoUrls((prev) => [...prev, customPhotoUrl.trim()]);
       setCustomPhotoUrl('');
       setShowCustomInput(false);
     }
@@ -90,7 +74,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
   };
 
   const handleRemovePhoto = (indexToRemove: number) => {
-    setSelectedPhotos((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setCustomPhotoUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleRemoveFile = (indexToRemove: number) => {
@@ -126,7 +110,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               type="text"
               required
               disabled={isSubmitting}
-              placeholder="Ex: Trattoria da Nonna, Roma ou Praia de Copacabana"
+              placeholder="Nome do local ou estabelecimento"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50"
@@ -206,7 +190,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               required
               rows={3}
               disabled={isSubmitting}
-              placeholder="Escreva um breve resumo da sua visita... Detalhes da comida, do ambiente ou de momentos marcantes!"
+              placeholder="Como foi a sua experiência?"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all placeholder-gray-400 dark:placeholder-gray-500 resize-none disabled:opacity-50"
@@ -218,7 +202,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                Adicionar Fotos ({selectedPhotos.length + photoFiles.length})
+                Adicionar Fotos ({customPhotoUrls.length + photoFiles.length})
               </label>
               
               <div className="flex items-center gap-3">
@@ -257,7 +241,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               <div className="flex gap-2 animate-in slide-in-from-top-2 duration-200">
                 <input
                   type="url"
-                  placeholder="Cole o link direto da imagem aqui..."
+                  placeholder="Cole o link direto da imagem..."
                   value={customPhotoUrl}
                   onChange={(e) => setCustomPhotoUrl(e.target.value)}
                   className="flex-1 px-3 py-2 text-xs rounded-xl glass-input focus:outline-none text-gray-800 dark:text-white"
@@ -272,41 +256,13 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               </div>
             )}
 
-            {/* Selection Grid for Preset Images */}
-            <div className="space-y-1.5">
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                Toque nos presets abaixo para simular fotos da sua viagem:
-              </p>
-              <div className="grid grid-cols-6 gap-2">
-                {PRESET_IMAGES.map((img) => {
-                  const isSelected = selectedPhotos.includes(img.url);
-                  return (
-                    <button
-                      key={img.url}
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => togglePresetImage(img.url)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? 'border-indigo-500 scale-95 shadow-md shadow-indigo-500/25'
-                          : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'
-                      } disabled:opacity-50`}
-                    >
-                      <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/10" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Display Attached Photos List (Presets and Files) */}
-            {(selectedPhotos.length > 0 || photoFiles.length > 0) && (
+            {(customPhotoUrls.length > 0 || photoFiles.length > 0) && (
               <div className="flex gap-2 overflow-x-auto py-1">
-                {/* Render Presets */}
-                {selectedPhotos.map((url, idx) => (
-                  <div key={`preset-${idx}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-white/20 flex-shrink-0">
-                    <img src={url} alt="Preset attached preview" className="w-full h-full object-cover" />
+                {/* Render Custom URLs */}
+                {customPhotoUrls.map((url, idx) => (
+                  <div key={`url-${idx}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-white/20 flex-shrink-0">
+                    <img src={url} alt="Attached preview" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       disabled={isSubmitting}

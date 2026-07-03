@@ -40,6 +40,12 @@ interface AppContextType {
   toggleLike: (postId: string) => Promise<void>;
   toggleFollow: (userId: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  updateProfile: (
+    displayName: string,
+    bio: string,
+    avatarFile?: File,
+    bannerFile?: File
+  ) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -171,7 +177,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setUsers(uiUsers);
 
-      const activeProfile = uiUsers.find((u) => u.id === currentUserId) || null;
+      let activeProfile = uiUsers.find((u) => u.id === currentUserId) || null;
+
+      // If RLS insert or email check left user profile missing in database, create it now!
+      if (!activeProfile && isSupabaseConfigured) {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        if (sbUser) {
+          const defaultUsername = sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || `user_${Date.now()}`;
+          const defaultDisplayName = sbUser.user_metadata?.display_name || sbUser.email?.split('@')[0] || 'Novo Viajante';
+          const defaultBio = sbUser.user_metadata?.bio || '';
+
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: currentUserId,
+              username: defaultUsername,
+              display_name: defaultDisplayName,
+              bio: defaultBio,
+              avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+              banner_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80'
+            });
+
+          if (!insertError) {
+            // Profile created successfully! Refetch data to sync
+            await loadData(currentUserId);
+            return;
+          } else {
+            console.error('Failed to create user profile on login:', insertError.message);
+          }
+        }
+      }
+
       setCurrentUser(activeProfile);
       
       // Keep selectedUser in sync
@@ -285,16 +321,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('Nome de usuário já está em uso.');
       }
 
-      // 2. Sign up Auth user
+      // 2. Sign up Auth user, embedding profile data in metadata options
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username,
+            display_name: displayName,
+            bio: bio
+          }
+        }
       });
 
       if (signUpError) throw signUpError;
       if (!signUpData.user) throw new Error('Falha ao registrar usuário.');
 
-      // 3. Create User Profile
+      // 3. Try to Create User Profile manually (might fail if email confirmation is enabled, which is fine since loadData fallback handles it)
       const { error: profileError } = await supabase.from('profiles').insert({
         id: signUpData.user.id,
         username,
@@ -304,7 +347,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         banner_url: `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80`,
       });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.warn('Profile direct insert failed, will trigger on-the-fly upon email validation login:', profileError.message);
+      }
 
     } catch (e: any) {
       setAuthError(e.message);
@@ -318,7 +363,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     } else {
-      // Mock logout (does nothing since we have no session)
       console.warn('Signing out mock user.');
     }
   };
@@ -340,7 +384,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 1. Upload custom image files if selected
       if (isSupabaseConfigured && photoFiles && photoFiles.length > 0) {
         for (const file of photoFiles) {
-          // Compress on the fly: high resolution but 10x smaller footprint
           const compressedBlob = await compressImage(file);
           const fileExt = file.name.split('.').pop() || 'jpg';
           const fileName = `${currentUser.id}/${Date.now()}-${Math.round(
@@ -460,7 +503,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       if (isSupabaseConfigured) {
         if (matchedPost.isLiked) {
-          // Unlike
           const { error } = await supabase
             .from('likes')
             .delete()
@@ -469,7 +511,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           if (error) throw error;
         } else {
-          // Like
           const { error } = await supabase
             .from('likes')
             .insert({ post_id: postId, user_id: currentUser.id });
@@ -508,7 +549,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       if (isSupabaseConfigured) {
         if (matchedUser.isFollowing) {
-          // Unfollow
           const { error } = await supabase
             .from('follows')
             .delete()
@@ -517,7 +557,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           if (error) throw error;
         } else {
-          // Follow
           const { error } = await supabase
             .from('follows')
             .insert({ follower_id: currentUser.id, following_id: userId });
@@ -558,6 +597,111 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Update Profile details and custom file uploads
+  const updateProfile = async (
+    displayName: string,
+    bio: string,
+    avatarFile?: File,
+    bannerFile?: File
+  ) => {
+    if (!currentUser) return;
+
+    try {
+      let avatarUrl = currentUser.avatar;
+      let bannerUrl = currentUser.banner;
+
+      // 1. Upload new avatar if selected
+      if (isSupabaseConfigured && avatarFile) {
+        const compressedBlob = await compressImage(avatarFile);
+        const fileExt = avatarFile.name.split('.').pop() || 'jpg';
+        const fileName = `${currentUser.id}/avatar-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('trip-media')
+          .upload(fileName, compressedBlob, {
+            contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('trip-media')
+          .getPublicUrl(fileName);
+
+        avatarUrl = publicUrl;
+      }
+
+      // 2. Upload new banner if selected
+      if (isSupabaseConfigured && bannerFile) {
+        const compressedBlob = await compressImage(bannerFile);
+        const fileExt = bannerFile.name.split('.').pop() || 'jpg';
+        const fileName = `${currentUser.id}/banner-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('trip-media')
+          .upload(fileName, compressedBlob, {
+            contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('trip-media')
+          .getPublicUrl(fileName);
+
+        bannerUrl = publicUrl;
+      }
+
+      // 3. Update database record
+      if (isSupabaseConfigured) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            display_name: displayName,
+            bio: bio,
+            avatar_url: avatarUrl,
+            banner_url: bannerUrl
+          })
+          .eq('id', currentUser.id);
+
+        if (error) throw error;
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u.id === currentUser.id) {
+              return {
+                ...u,
+                displayName,
+                bio,
+                avatar: avatarFile ? URL.createObjectURL(avatarFile) : avatarUrl,
+                banner: bannerFile ? URL.createObjectURL(bannerFile) : bannerUrl
+              };
+            }
+            return u;
+          })
+        );
+        
+        setCurrentUser((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            displayName,
+            bio,
+            avatar: avatarFile ? URL.createObjectURL(avatarFile) : avatarUrl,
+            banner: bannerFile ? URL.createObjectURL(bannerFile) : bannerUrl
+          };
+        });
+      }
+    } catch (e: any) {
+      console.error('Error updating profile:', e.message);
+      alert('Falha ao atualizar perfil: ' + e.message);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -580,6 +724,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleLike,
         toggleFollow,
         refreshData,
+        updateProfile,
       }}
     >
       {children}

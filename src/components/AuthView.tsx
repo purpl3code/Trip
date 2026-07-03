@@ -64,7 +64,7 @@ export const AuthView: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Sophia Costa"
+                  placeholder="Seu nome completo"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
@@ -80,7 +80,7 @@ export const AuthView: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Ex: sophia_adventures"
+                  placeholder="Nome de usuário desejado"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
                   className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
@@ -95,7 +95,7 @@ export const AuthView: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Ex: Viajando e comendo pelo mundo..."
+                  placeholder="Fale um pouco sobre você..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
@@ -113,7 +113,7 @@ export const AuthView: React.FC = () => {
             <input
               type="email"
               required
-              placeholder="seuemail@exemplo.com"
+              placeholder="Digite seu e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
