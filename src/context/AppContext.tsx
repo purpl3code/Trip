@@ -1,0 +1,596 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { Post, User, Comment } from '../mockData';
+import { mockPosts, mockUsers } from '../mockData';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { compressImage } from '../utils/imageCompressor';
+
+interface AppContextType {
+  posts: Post[];
+  users: User[];
+  currentUser: User | null;
+  activeTab: 'feed' | 'search' | 'profile';
+  setActiveTab: (tab: 'feed' | 'search' | 'profile') => void;
+  selectedUser: User | null;
+  setSelectedUser: (user: User | null) => void;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+  
+  // Auth Functions
+  isAuthLoading: boolean;
+  authError: string | null;
+  handleSignIn: (email: string, password: string) => Promise<void>;
+  handleSignUp: (email: string, password: string, username: string, displayName: string, bio: string) => Promise<void>;
+  handleSignOut: () => Promise<void>;
+  
+  // Database Functions
+  addPost: (
+    content: string,
+    location: string,
+    rating: number,
+    verdict: 'Gostei' | 'Não gostei',
+    presetPhotos: string[],
+    photoFiles?: File[]
+  ) => Promise<void>;
+  addComment: (
+    postId: string,
+    content: string,
+    rating?: number,
+    verdict?: 'Gostei' | 'Não gostei'
+  ) => Promise<void>;
+  toggleLike: (postId: string) => Promise<void>;
+  toggleFollow: (userId: string) => Promise<void>;
+  refreshData: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Theme State
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('trip_theme');
+    return (saved as 'dark' | 'light') || 'dark';
+  });
+
+  // UI state
+  const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // App core data states
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Auth processing states
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
+
+  // Apply theme class to document element
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('trip_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // Setup Supabase auth listeners & load data
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      // Fallback: load mockup data
+      const savedPosts = localStorage.getItem('trip_posts');
+      const savedUsers = localStorage.getItem('trip_users');
+      const loadedUsers = savedUsers ? JSON.parse(savedUsers) : mockUsers;
+      setPosts(savedPosts ? JSON.parse(savedPosts) : mockPosts);
+      setUsers(loadedUsers);
+      setCurrentUser(loadedUsers[0]);
+      setSelectedUser(loadedUsers[0]);
+      return;
+    }
+
+    // 1. Get current session
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
+      setSession(session);
+      if (session?.user) {
+        loadData(session.user.id);
+      }
+    });
+
+    // 2. Auth changes listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setSession(session);
+      if (session?.user) {
+        loadData(session.user.id);
+      } else {
+        setCurrentUser(null);
+        setSelectedUser(null);
+        setPosts([]);
+        setUsers([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sync offline mock data to localStorage when modified (only in fallback mode)
+  useEffect(() => {
+    if (!isSupabaseConfigured && posts.length > 0) {
+      localStorage.setItem('trip_posts', JSON.stringify(posts));
+    }
+  }, [posts]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured && users.length > 0) {
+      localStorage.setItem('trip_users', JSON.stringify(users));
+    }
+  }, [users]);
+
+  // Load all application datasets from Supabase
+  const loadData = async (currentUserId: string) => {
+    try {
+      // Fetch profiles
+      const { data: dbProfiles, error: profError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profError) throw profError;
+
+      // Fetch follows
+      const { data: dbFollows, error: followError } = await supabase
+        .from('follows')
+        .select('*');
+      
+      if (followError) throw followError;
+
+      // Map DB profiles to UI User format
+      const uiUsers: User[] = (dbProfiles || []).map((prof: any) => {
+        const followers = (dbFollows || []).filter((f: any) => f.following_id === prof.id);
+        const following = (dbFollows || []).filter((f: any) => f.follower_id === prof.id);
+        const isFollowing = (dbFollows || []).some(
+          (f: any) => f.follower_id === currentUserId && f.following_id === prof.id
+        );
+
+        return {
+          id: prof.id,
+          username: prof.username,
+          displayName: prof.display_name,
+          avatar: prof.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+          banner: prof.banner_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
+          bio: prof.bio || '',
+          followersCount: followers.length,
+          followingCount: following.length,
+          isFollowing,
+        };
+      });
+
+      setUsers(uiUsers);
+
+      const activeProfile = uiUsers.find((u) => u.id === currentUserId) || null;
+      setCurrentUser(activeProfile);
+      
+      // Keep selectedUser in sync
+      if (selectedUser) {
+        const updatedSelected = uiUsers.find((u) => u.id === selectedUser.id);
+        if (updatedSelected) setSelectedUser(updatedSelected);
+      } else {
+        setSelectedUser(activeProfile);
+      }
+
+      // Fetch Posts, including user profiles, comments, and likes
+      const { data: dbPosts, error: postsError } = await supabase
+        .from('posts')
+        .select('*, user:profiles(*), comments(*, user:profiles(*)), likes(user_id)')
+        .order('created_at', { ascending: false });
+
+      if (postsError) throw postsError;
+
+      const uiPosts: Post[] = (dbPosts || []).map((p: any) => {
+        const postLikes = p.likes || [];
+        const isLiked = postLikes.some((l: any) => l.user_id === currentUserId);
+        
+        const mappedComments: Comment[] = (p.comments || [])
+          .map((c: any) => ({
+            id: c.id,
+            user: uiUsers.find((u) => u.id === c.user_id) || {
+              id: c.user_id,
+              username: 'user',
+              displayName: 'User',
+              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+              banner: '',
+              bio: '',
+              followersCount: 0,
+              followingCount: 0,
+              isFollowing: false
+            },
+            content: c.content,
+            rating: c.rating ?? undefined,
+            verdict: c.verdict ?? undefined,
+            createdAt: c.created_at,
+          }))
+          .sort((a: Comment, b: Comment) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+        return {
+          id: p.id,
+          user: uiUsers.find((u) => u.id === p.user_id) || uiUsers[0],
+          content: p.content,
+          location: p.location,
+          rating: p.rating,
+          verdict: p.verdict,
+          photos: p.photos || [],
+          likesCount: postLikes.length,
+          isLiked,
+          comments: mappedComments,
+          createdAt: p.created_at,
+        };
+      });
+
+      setPosts(uiPosts);
+    } catch (e: any) {
+      console.error('Error fetching database:', e.message);
+    }
+  };
+
+  const refreshData = async () => {
+    if (isSupabaseConfigured && session?.user) {
+      await loadData(session.user.id);
+    }
+  };
+
+  // Auth - Sign In
+  const handleSignIn = async (email: string, password: string) => {
+    setAuthError(null);
+    setIsAuthLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase is not configured. Register your credentials in .env.');
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (e: any) {
+      setAuthError(e.message);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Auth - Sign Up
+  const handleSignUp = async (
+    email: string,
+    password: string,
+    username: string,
+    displayName: string,
+    bio: string
+  ) => {
+    setAuthError(null);
+    setIsAuthLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase is not configured. Register your credentials in .env.');
+      }
+      
+      // 1. Check if username is already taken
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (existingUser) {
+        throw new Error('Nome de usuário já está em uso.');
+      }
+
+      // 2. Sign up Auth user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error('Falha ao registrar usuário.');
+
+      // 3. Create User Profile
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: signUpData.user.id,
+        username,
+        display_name: displayName,
+        bio,
+        avatar_url: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80`,
+        banner_url: `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80`,
+      });
+
+      if (profileError) throw profileError;
+
+    } catch (e: any) {
+      setAuthError(e.message);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Auth - Sign Out
+  const handleSignOut = async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    } else {
+      // Mock logout (does nothing since we have no session)
+      console.warn('Signing out mock user.');
+    }
+  };
+
+  // Create Post
+  const addPost = async (
+    content: string,
+    location: string,
+    rating: number,
+    verdict: 'Gostei' | 'Não gostei',
+    presetPhotos: string[],
+    photoFiles?: File[]
+  ) => {
+    if (!currentUser) return;
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      // 1. Upload custom image files if selected
+      if (isSupabaseConfigured && photoFiles && photoFiles.length > 0) {
+        for (const file of photoFiles) {
+          // Compress on the fly: high resolution but 10x smaller footprint
+          const compressedBlob = await compressImage(file);
+          const fileExt = file.name.split('.').pop() || 'jpg';
+          const fileName = `${currentUser.id}/${Date.now()}-${Math.round(
+            Math.random() * 100000
+          )}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('trip-media')
+            .upload(fileName, compressedBlob, {
+              contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('trip-media')
+            .getPublicUrl(fileName);
+
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      const combinedPhotos = [...presetPhotos, ...uploadedUrls];
+
+      // 2. Insert post database record
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from('posts').insert({
+          content,
+          location,
+          rating,
+          verdict,
+          photos: combinedPhotos,
+          user_id: currentUser.id,
+        });
+
+        if (error) throw error;
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        const newPost: Post = {
+          id: `post-${Date.now()}`,
+          user: currentUser,
+          content,
+          location,
+          rating,
+          verdict,
+          photos: combinedPhotos,
+          likesCount: 0,
+          isLiked: false,
+          comments: [],
+          createdAt: new Date().toISOString(),
+        };
+        setPosts((prev) => [newPost, ...prev]);
+      }
+    } catch (e: any) {
+      console.error('Error adding post:', e.message);
+      alert('Falha ao adicionar relato: ' + e.message);
+    }
+  };
+
+  // Add Comment
+  const addComment = async (
+    postId: string,
+    content: string,
+    rating?: number,
+    verdict?: 'Gostei' | 'Não gostei'
+  ) => {
+    if (!currentUser) return;
+
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from('comments').insert({
+          post_id: postId,
+          user_id: currentUser.id,
+          content,
+          rating: rating ?? null,
+          verdict: verdict ?? null,
+        });
+
+        if (error) throw error;
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        const newComment: Comment = {
+          id: `comment-${Date.now()}`,
+          user: currentUser,
+          content,
+          rating,
+          verdict,
+          createdAt: new Date().toISOString(),
+        };
+
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                comments: [...post.comments, newComment],
+              };
+            }
+            return post;
+          })
+        );
+      }
+    } catch (e: any) {
+      console.error('Error adding comment:', e.message);
+    }
+  };
+
+  // Toggle Like
+  const toggleLike = async (postId: string) => {
+    if (!currentUser) return;
+
+    const matchedPost = posts.find((p) => p.id === postId);
+    if (!matchedPost) return;
+
+    try {
+      if (isSupabaseConfigured) {
+        if (matchedPost.isLiked) {
+          // Unlike
+          const { error } = await supabase
+            .from('likes')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', currentUser.id);
+
+          if (error) throw error;
+        } else {
+          // Like
+          const { error } = await supabase
+            .from('likes')
+            .insert({ post_id: postId, user_id: currentUser.id });
+
+          if (error) throw error;
+        }
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.id === postId) {
+              const isLiked = !post.isLiked;
+              return {
+                ...post,
+                isLiked,
+                likesCount: isLiked ? post.likesCount + 1 : post.likesCount - 1,
+              };
+            }
+            return post;
+          })
+        );
+      }
+    } catch (e: any) {
+      console.error('Error toggling like:', e.message);
+    }
+  };
+
+  // Toggle Follow
+  const toggleFollow = async (userId: string) => {
+    if (!currentUser) return;
+
+    const matchedUser = users.find((u) => u.id === userId);
+    if (!matchedUser) return;
+
+    try {
+      if (isSupabaseConfigured) {
+        if (matchedUser.isFollowing) {
+          // Unfollow
+          const { error } = await supabase
+            .from('follows')
+            .delete()
+            .eq('follower_id', currentUser.id)
+            .eq('following_id', userId);
+
+          if (error) throw error;
+        } else {
+          // Follow
+          const { error } = await supabase
+            .from('follows')
+            .insert({ follower_id: currentUser.id, following_id: userId });
+
+          if (error) throw error;
+        }
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        setUsers((prevUsers) =>
+          prevUsers.map((user) => {
+            if (user.id === userId) {
+              const isFollowing = !user.isFollowing;
+              return {
+                ...user,
+                isFollowing,
+                followersCount: isFollowing ? user.followersCount + 1 : user.followersCount - 1,
+              };
+            }
+            return user;
+          })
+        );
+
+        if (selectedUser?.id === userId) {
+          setSelectedUser((prev) => {
+            if (!prev) return null;
+            const isFollowing = !prev.isFollowing;
+            return {
+              ...prev,
+              isFollowing,
+              followersCount: isFollowing ? prev.followersCount + 1 : prev.followersCount - 1,
+            };
+          });
+        }
+      }
+    } catch (e: any) {
+      console.error('Error toggling follow:', e.message);
+    }
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        posts,
+        users,
+        currentUser,
+        activeTab,
+        setActiveTab,
+        selectedUser,
+        setSelectedUser,
+        theme,
+        toggleTheme,
+        isAuthLoading,
+        authError,
+        handleSignIn,
+        handleSignUp,
+        handleSignOut,
+        addPost,
+        addComment,
+        toggleLike,
+        toggleFollow,
+        refreshData,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Trip</string>
+    <string name="title_activity_main">Trip</string>
+    <string name="package_name">com.purpl3code.trip</string>
+    <string name="custom_url_scheme">com.purpl3code.trip</string>
+</resources>
