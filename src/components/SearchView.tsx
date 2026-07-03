@@ -74,7 +74,7 @@ export const SearchView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Search Header */}
       <div>
         <h2 className="text-xl font-black tracking-tight text-gray-800 dark:text-white">Buscar</h2>
@@ -94,7 +94,7 @@ export const SearchView: React.FC = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 overflow-x-auto pb-1.5 w-full max-w-full no-scrollbar">
         <button
           onClick={() => setFilterType('all')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${

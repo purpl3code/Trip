@@ -36,7 +36,7 @@ function App() {
       <Sidebar onOpenNewPost={() => setIsNewPostOpen(true)} />
 
       {/* Main Layout Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative z-10">
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
         
         {/* Top Header Bar */}
         <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 h-16 px-6 flex items-center justify-between z-30 transition-colors duration-300">
