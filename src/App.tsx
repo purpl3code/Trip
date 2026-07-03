@@ -39,7 +39,7 @@ function App() {
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 h-16 px-6 flex items-center justify-between z-30 transition-colors duration-300">
+        <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
           <div className="flex items-center gap-2 md:hidden">
             <div className="bg-gradient-to-tr from-indigo-500 to-pink-500 p-1.5 rounded-lg">
               <Compass className="w-5 h-5 text-white" />
