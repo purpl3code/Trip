@@ -179,7 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: prof.id,
           username: prof.username,
           displayName: prof.display_name,
-          avatar: prof.avatar_url || DEFAULT_AVATAR,
+          avatar: (prof.avatar_url && !prof.avatar_url.includes('photo-1535713875002-d1d0cf377fde')) ? prof.avatar_url : DEFAULT_AVATAR,
           banner: prof.banner_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
           bio: prof.bio || '',
           followersCount: followers.length,

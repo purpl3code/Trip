@@ -134,15 +134,17 @@ function App() {
           {/* Profile View */}
           {activeTab === 'profile' && (
             <div className="space-y-6">
-              {/* Back to feed header on profiles */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setActiveTab('feed')}
-                  className="text-xs font-bold text-indigo-500 hover:underline"
-                >
-                  ← Voltar para a Linha do Tempo
-                </button>
-              </div>
+              {/* Back to feed header on profiles - hide if viewing own profile */}
+              {selectedUser && currentUser && selectedUser.id !== currentUser.id && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveTab('feed')}
+                    className="text-xs font-bold text-indigo-500 hover:underline"
+                  >
+                    ← Voltar para a Linha do Tempo
+                  </button>
+                </div>
+              )}
 
               {selectedUser && <UserProfile user={selectedUser} />}
             </div>
