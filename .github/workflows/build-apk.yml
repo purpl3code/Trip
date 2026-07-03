@@ -37,17 +37,48 @@ jobs:
         run: |
           npx capacitor sync android
 
+      - name: Restore or Generate Release Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Restoring keystore from secret..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/trip-release.keystore
+          else
+            echo "No keystore secret found, generating a new one..."
+            keytool -genkeypair -v \
+              -keystore android/trip-release.keystore \
+              -alias trip-key \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass TripApp2024! \
+              -keypass TripApp2024! \
+              -dname "CN=Trip App, OU=Mobile, O=Trip, L=Brazil, S=SP, C=BR"
+            echo "=== IMPORTANT: Add this base64 to GitHub Secrets as KEYSTORE_BASE64 ==="
+            base64 -w 0 android/trip-release.keystore
+            echo ""
+          fi
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK (Debug Mode)
+      - name: Build Signed APK (Release)
+        env:
+          KEY_ALIAS: trip-key
+          KEY_PASSWORD: TripApp2024!
+          STORE_PASSWORD: TripApp2024!
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/trip-release.keystore \
+            -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trip-app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: trip-app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
