@@ -4,6 +4,8 @@ import { mockPosts, mockUsers } from '../mockData';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { compressImage } from '../utils/imageCompressor';
 
+const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23cbd5e1"/><circle cx="12" cy="8" r="4" fill="%23ffffff"/><path d="M4 20c0-3 3-5 8-5s8 2 8 5" fill="%23ffffff"/></svg>';
+
 interface AppContextType {
   posts: Post[];
   users: User[];
@@ -177,7 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: prof.id,
           username: prof.username,
           displayName: prof.display_name,
-          avatar: prof.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+          avatar: prof.avatar_url || DEFAULT_AVATAR,
           banner: prof.banner_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
           bio: prof.bio || '',
           followersCount: followers.length,
@@ -205,7 +207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               username: defaultUsername,
               display_name: defaultDisplayName,
               bio: defaultBio,
-              avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+              avatar_url: DEFAULT_AVATAR,
               banner_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80'
             });
 
@@ -248,7 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               id: c.user_id,
               username: 'user',
               displayName: 'User',
-              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+              avatar: DEFAULT_AVATAR,
               banner: '',
               bio: '',
               followersCount: 0,
@@ -354,7 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         username,
         display_name: displayName,
         bio,
-        avatar_url: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80`,
+        avatar_url: DEFAULT_AVATAR,
         banner_url: `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80`,
       });
 
