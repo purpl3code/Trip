@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import type { Post } from '../mockData';
 import { useApp } from '../context/AppContext';
 import { CommentSection } from './CommentSection';
-import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const { toggleLike, setSelectedUser, setActiveTab } = useApp();
+  const { toggleLike, setSelectedUser, setActiveTab, currentUser, deletePost } = useApp();
   const [showComments, setShowComments] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza de que deseja excluir este relato?')) {
+      await deletePost(post.id);
+    }
+  };
 
   const handleUserClick = () => {
     setSelectedUser(post.user);
@@ -61,9 +67,20 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         </button>
 
-        <span className="text-[10px] font-medium text-gray-400">
-          {formatDate(post.createdAt)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium text-gray-400">
+            {formatDate(post.createdAt)}
+          </span>
+          {currentUser && currentUser.id === post.user.id && (
+            <button
+              onClick={handleDelete}
+              className="p-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors"
+              title="Excluir relato"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Location Bar with Crowd-Sourced Ratings */}

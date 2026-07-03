@@ -17,6 +17,7 @@ interface AppContextType {
   
   // Auth Functions
   isAuthLoading: boolean;
+  isSessionLoading: boolean;
   authError: string | null;
   handleSignIn: (email: string, password: string) => Promise<void>;
   handleSignUp: (email: string, password: string, username: string, displayName: string, bio: string) => Promise<void>;
@@ -46,6 +47,7 @@ interface AppContextType {
     avatarFile?: File,
     bannerFile?: File
   ) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -68,6 +70,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Auth processing states
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [session, setSession] = useState<any>(null);
 
@@ -97,6 +100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsers(loadedUsers);
       setCurrentUser(loadedUsers[0]);
       setSelectedUser(loadedUsers[0]);
+      setIsSessionLoading(false);
       return;
     }
 
@@ -104,7 +108,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.auth.getSession().then(({ data: { session } }: any) => {
       setSession(session);
       if (session?.user) {
-        loadData(session.user.id);
+        loadData(session.user.id).finally(() => {
+          setIsSessionLoading(false);
+        });
+      } else {
+        setIsSessionLoading(false);
       }
     });
 
@@ -112,12 +120,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
       if (session?.user) {
-        loadData(session.user.id);
+        loadData(session.user.id).finally(() => {
+          setIsSessionLoading(false);
+        });
       } else {
         setCurrentUser(null);
         setSelectedUser(null);
         setPosts([]);
         setUsers([]);
+        setIsSessionLoading(false);
       }
     });
 
@@ -221,7 +232,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Fetch Posts, including user profiles, comments, and likes
       const { data: dbPosts, error: postsError } = await supabase
         .from('posts')
-        .select('*, user:profiles(*), comments(*, user:profiles(*)), likes(user_id)')
+        .select('*, user:profiles!user_id(*), comments(*, user:profiles!user_id(*)), likes(user_id)')
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
@@ -441,6 +452,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e: any) {
       console.error('Error adding post:', e.message);
       alert('Falha ao adicionar relato: ' + e.message);
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!currentUser) return;
+
+    try {
+      if (isSupabaseConfigured) {
+        // Delete comments first
+        const { error: commentsError } = await supabase
+          .from('comments')
+          .delete()
+          .eq('post_id', postId);
+        
+        if (commentsError) throw commentsError;
+
+        // Delete likes first
+        const { error: likesError } = await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', postId);
+
+        if (likesError) throw likesError;
+
+        // Delete the post
+        const { error: postError } = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', postId)
+          .eq('user_id', currentUser.id);
+
+        if (postError) throw postError;
+
+        await loadData(currentUser.id);
+      } else {
+        // Fallback: offline memory state
+        setPosts((prev) => prev.filter((p) => p.id !== postId));
+      }
+    } catch (e: any) {
+      console.error('Error deleting post:', e.message);
+      alert('Falha ao excluir relato: ' + e.message);
     }
   };
 
@@ -715,6 +767,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         theme,
         toggleTheme,
         isAuthLoading,
+        isSessionLoading,
         authError,
         handleSignIn,
         handleSignUp,
@@ -725,6 +778,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleFollow,
         refreshData,
         updateProfile,
+        deletePost,
       }}
     >
       {children}

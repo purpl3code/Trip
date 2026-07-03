@@ -10,6 +10,9 @@ export const AuthView: React.FC = () => {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [keepLogged, setKeepLogged] = useState(() => {
+    return localStorage.getItem('trip_keep_logged') !== 'false';
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +139,25 @@ export const AuthView: React.FC = () => {
               className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
             />
           </div>
+
+          {/* Keep Connected Checkbox */}
+          {!isSignUp && (
+            <div className="flex items-center gap-2 py-1">
+              <input
+                type="checkbox"
+                id="keep-logged"
+                checked={keepLogged}
+                onChange={(e) => {
+                  setKeepLogged(e.target.checked);
+                  localStorage.setItem('trip_keep_logged', e.target.checked ? 'true' : 'false');
+                }}
+                className="w-4 h-4 rounded text-indigo-500 border-white/20 dark:border-white/5 bg-white/20 dark:bg-white/5 focus:ring-indigo-500/50"
+              />
+              <label htmlFor="keep-logged" className="text-xs font-bold text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+                Mantenha-me conectado
+              </label>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button

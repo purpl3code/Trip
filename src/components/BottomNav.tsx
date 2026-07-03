@@ -15,7 +15,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenNewPost }) => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/70 dark:bg-[#0f1115]/75 backdrop-blur-lg border-t border-white/20 dark:border-white/5 px-6 flex items-center justify-between z-20 transition-colors duration-300">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white/70 dark:bg-[#0f1115]/75 backdrop-blur-lg border-t border-white/20 dark:border-white/5 px-6 flex items-center justify-between z-20 transition-colors duration-300">
       <button
         onClick={() => setActiveTab('feed')}
         className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all ${

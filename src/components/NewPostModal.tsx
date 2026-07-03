@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Link as LinkIcon, Upload } from 'lucide-react';
+import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Upload } from 'lucide-react';
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -13,10 +13,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
   const [location, setLocation] = useState('');
   const [rating, setRating] = useState(5);
   const [verdict, setVerdict] = useState<'Gostei' | 'Não gostei'>('Gostei');
-  const [customPhotoUrls, setCustomPhotoUrls] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [customPhotoUrl, setCustomPhotoUrl] = useState('');
-  const [showCustomInput, setShowCustomInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lock background scroll when modal is open
@@ -39,17 +36,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
 
     setIsSubmitting(true);
     try {
-      await addPost(content, location, rating, verdict, customPhotoUrls, photoFiles);
+      await addPost(content, location, rating, verdict, [], photoFiles);
       
       // Reset form
       setContent('');
       setLocation('');
       setRating(5);
       setVerdict('Gostei');
-      setCustomPhotoUrls([]);
       setPhotoFiles([]);
-      setCustomPhotoUrl('');
-      setShowCustomInput(false);
       onClose();
     } catch (error) {
       console.error('Error submitting post:', error);
@@ -58,23 +52,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const handleAddCustomPhoto = () => {
-    if (customPhotoUrl.trim()) {
-      setCustomPhotoUrls((prev) => [...prev, customPhotoUrl.trim()]);
-      setCustomPhotoUrl('');
-      setShowCustomInput(false);
-    }
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setPhotoFiles((prev) => [...prev, ...filesArray]);
     }
-  };
-
-  const handleRemovePhoto = (indexToRemove: number) => {
-    setCustomPhotoUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleRemoveFile = (indexToRemove: number) => {
@@ -202,7 +184,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                Adicionar Fotos ({customPhotoUrls.length + photoFiles.length})
+                Adicionar Fotos ({photoFiles.length})
               </label>
               
               <div className="flex items-center gap-3">
@@ -223,57 +205,12 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                   <Upload className="w-3.5 h-3.5" />
                   Upload
                 </label>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setShowCustomInput(!showCustomInput)}
-                  className="text-xs text-indigo-500 hover:underline flex items-center gap-1 disabled:opacity-50"
-                >
-                  <LinkIcon className="w-3 h-3" />
-                  Inserir Link
-                </button>
               </div>
             </div>
 
-            {/* Custom URL Input */}
-            {showCustomInput && (
-              <div className="flex gap-2 animate-in slide-in-from-top-2 duration-200">
-                <input
-                  type="url"
-                  placeholder="Cole o link direto da imagem..."
-                  value={customPhotoUrl}
-                  onChange={(e) => setCustomPhotoUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs rounded-xl glass-input focus:outline-none text-gray-800 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCustomPhoto}
-                  className="px-3 py-2 bg-indigo-500 text-white rounded-xl text-xs font-bold hover:bg-indigo-600"
-                >
-                  Adicionar
-                </button>
-              </div>
-            )}
-
-            {/* Display Attached Photos List (Presets and Files) */}
-            {(customPhotoUrls.length > 0 || photoFiles.length > 0) && (
+            {/* Display Attached Photos List (Files only) */}
+            {photoFiles.length > 0 && (
               <div className="flex gap-2 overflow-x-auto py-1">
-                {/* Render Custom URLs */}
-                {customPhotoUrls.map((url, idx) => (
-                  <div key={`url-${idx}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-white/20 flex-shrink-0">
-                    <img src={url} alt="Attached preview" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => handleRemovePhoto(idx)}
-                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/80 transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                
                 {/* Render Custom Files */}
                 {photoFiles.map((file, idx) => {
                   const fileUrl = URL.createObjectURL(file);

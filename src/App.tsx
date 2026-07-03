@@ -10,9 +10,21 @@ import { AuthView } from './components/AuthView';
 import { Compass, Users, Sparkles, MapPin } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, setActiveTab, selectedUser, currentUser } = useApp();
+  const { posts, activeTab, setActiveTab, selectedUser, currentUser, isSessionLoading } = useApp();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedType, setFeedType] = useState<'global' | 'following'>('global');
+
+  // Guard clause: show a loading screen during session recovery to prevent login view flash
+  if (isSessionLoading) {
+    return (
+      <div className="min-h-screen bg-[#f1f3f6] dark:bg-[#090a0d] text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center gap-3">
+        <Compass className="w-12 h-12 text-indigo-500 animate-spin-slow" />
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase">
+          Carregando Diário...
+        </span>
+      </div>
+    );
+  }
 
   // Guard clause: enforce authentication
   if (!currentUser) {
@@ -42,7 +54,7 @@ function App() {
         <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
           <div className="flex items-center gap-2 md:hidden">
             <div className="bg-gradient-to-tr from-indigo-500 to-pink-500 p-1.5 rounded-lg">
-              <Compass className="w-5 h-5 text-white" />
+              <Compass className="w-5 h-5 text-white animate-spin-slow" />
             </div>
             <span className="text-lg font-black bg-gradient-to-r from-indigo-500 to-pink-500 bg-clip-text text-transparent tracking-widest">
               TRIP
