@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { Post } from '../mockData';
 import { useApp } from '../context/AppContext';
 import { CommentSection } from './CommentSection';
-import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2, X } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
@@ -12,6 +12,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { toggleLike, setSelectedUser, setActiveTab, currentUser, deletePost } = useApp();
   const [showComments, setShowComments] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const handleDelete = async () => {
     if (window.confirm('Tem certeza de que deseja excluir este relato?')) {
@@ -125,11 +126,12 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
       {/* Photo Showcase */}
       {post.photos && post.photos.length > 0 && (
         <div className="mb-4 space-y-2">
-          <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner border border-white/10">
+          <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-inner border border-white/10 group cursor-zoom-in">
             <img
               src={post.photos[activePhotoIdx]}
               alt={`Trip photo ${activePhotoIdx + 1}`}
-              className="w-full h-full object-cover transition-all duration-500"
+              className="w-full h-full object-cover transition-all duration-500 hover:scale-[1.03]"
+              onClick={() => setIsZoomed(true)}
             />
             {/* Multiple Photos indicator/dots */}
             {post.photos.length > 1 && (
@@ -208,6 +210,27 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
       {/* Expandable comments thread */}
       {showComments && <CommentSection post={post} />}
+
+      {/* Lightbox Zoom Modal */}
+      {isZoomed && (
+        <div 
+          className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsZoomed(false)}
+        >
+          <button 
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-10"
+            onClick={() => setIsZoomed(false)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <img
+            src={post.photos[activePhotoIdx]}
+            alt="Expanded trip"
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
+          />
+        </div>
+      )}
     </article>
   );
 };
