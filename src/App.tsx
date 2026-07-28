@@ -51,16 +51,19 @@ function App() {
   });
 
   return (
-    <div className="min-h-screen mesh-bg flex transition-colors duration-500">
+    <div className="min-h-screen mesh-bg flex transition-colors duration-500 relative">
+
+      {/* Mobile Fixed Safe Area Status Bar Shield (Prevents any content from colliding with system status bar) */}
+      <div className="fixed top-0 left-0 right-0 h-[max(env(safe-area-inset-top),44px)] bg-[var(--bg-base)] z-[100] md:hidden pointer-events-none border-b border-[var(--border-subtle)]/40" />
 
       {/* Sidebar for Desktop */}
       <Sidebar onOpenNewPost={() => setIsNewPostOpen(true)} />
 
       {/* Main Layout Area */}
-      <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
+      <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden pt-[max(env(safe-area-inset-top),44px)] md:pt-0">
         
-        {/* Top Header Bar with Solid Safe Area Top Cap */}
-        <header className="sticky top-0 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-6 pb-3 pt-[max(env(safe-area-inset-top),40px)] flex items-center justify-between z-40 transition-colors duration-300 md:pt-4 md:h-16 shadow-sm">
+        {/* Top Header Bar */}
+        <header className="sticky top-[max(env(safe-area-inset-top),44px)] md:top-0 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-6 py-3.5 flex items-center justify-between z-40 transition-colors duration-300 md:h-16 shadow-sm">
           {/* Mobile Logo */}
           <div className="flex items-center gap-2.5 md:hidden">
             <div className="gradient-primary p-1.5 rounded-xl shadow-md">
