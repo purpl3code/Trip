@@ -106,10 +106,10 @@ export const SearchView: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setFilterType(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 whitespace-nowrap shrink-0 ${
                 isActive
-                  ? 'btn-primary shadow-sm'
-                  : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:text-[var(--text-secondary)]'
+                  ? 'bg-[var(--clr-primary)] text-white shadow-md shadow-[var(--clr-primary)]/25'
+                  : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
               }`}
             >
               {Icon && <Icon className="w-3.5 h-3.5" />}

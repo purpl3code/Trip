@@ -9,7 +9,7 @@ interface UserProfileProps {
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
-  const { posts, currentUser, toggleFollow, handleSignOut, setIsEditProfileOpen } = useApp();
+  const { posts, currentUser, toggleFollow, handleSignOut, setIsEditProfileOpen, setExpandedPhotoUrl } = useApp();
   const [profileTab, setProfileTab] = useState<'posts' | 'moments' | 'gallery'>('posts');
 
   const isOwnProfile = user.id === currentUser?.id;
@@ -67,97 +67,100 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   return (
     <div className="w-full space-y-6">
       {/* Profile Header Card */}
-      <div className="glass-card-elevated rounded-3xl overflow-hidden border border-[var(--border-subtle)] animate-slide-up">
+      <div className="glass-card-elevated rounded-3xl overflow-hidden border border-[var(--border-subtle)] animate-slide-up shadow-xl">
         {/* Banner */}
-        <div className="h-36 md:h-48 w-full relative">
+        <div className="h-40 sm:h-52 w-full relative">
           <img src={user.banner} alt="Profile banner" className="w-full h-full object-cover" />
           {/* Mesh overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)]/80 via-[var(--bg-base)]/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--clr-primary)]/10 via-transparent to-[var(--clr-teal)]/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/20 to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--clr-primary)]/15 via-transparent to-[var(--clr-teal)]/15" />
         </div>
 
         {/* Profile Details Area */}
-        <div className="px-6 pb-6 relative">
-          {/* Avatar floating */}
-          <div className="absolute -top-12 left-6">
-            <div className="avatar-ring p-[3px] rounded-2xl shadow-xl">
+        <div className="px-5 sm:px-6 pb-6 relative">
+          {/* Top Row: Avatar & Action Buttons */}
+          <div className="flex items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-4 relative z-10">
+            {/* Avatar */}
+            <div className="avatar-ring p-[3px] rounded-2xl shadow-2xl bg-[var(--bg-elevated)] shrink-0">
               <img
                 src={user.avatar}
                 alt={user.displayName}
-                className="w-24 h-24 object-cover rounded-[14px]"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-[14px]"
               />
             </div>
+
+            {/* Follow / Edit Actions */}
+            <div className="flex items-center gap-2 mb-1">
+              {!isOwnProfile ? (
+                <button
+                  onClick={() => toggleFollow(user.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                    user.isFollowing
+                      ? 'btn-secondary hover:bg-[var(--clr-danger)]/10 hover:border-[var(--clr-danger)] hover:text-[var(--clr-danger)]'
+                      : 'btn-primary'
+                  }`}
+                >
+                  {user.isFollowing ? (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      <span>Seguindo</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      <span>Seguir</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditProfileOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold btn-secondary shadow-sm"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Editar Perfil</span>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-[var(--clr-danger)]/10 border border-[var(--clr-danger)]/25 text-[var(--clr-danger)] hover:bg-[var(--clr-danger)]/20 transition-all shadow-sm"
+                    title="Sair da Conta"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Follow Actions */}
-          <div className="flex justify-end pt-4 min-h-[48px]">
-            {!isOwnProfile ? (
-              <button
-                onClick={() => toggleFollow(user.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
-                  user.isFollowing
-                    ? 'btn-secondary hover:bg-[var(--clr-danger)]/10 hover:border-[var(--clr-danger)] hover:text-[var(--clr-danger)]'
-                    : 'btn-primary'
-                }`}
-              >
-                {user.isFollowing ? (
-                  <>
-                    <UserCheck className="w-4 h-4" />
-                    <span>Seguindo</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4" />
-                    <span>Seguir</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsEditProfileOpen(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold btn-secondary"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  <span>Editar Perfil</span>
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-[var(--clr-danger)]/10 border border-[var(--clr-danger)]/25 text-[var(--clr-danger)] hover:bg-[var(--clr-danger)]/20 transition-all"
-                  title="Sair da Conta"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* User Bio and Meta */}
-          <div className="mt-4 space-y-3">
+          {/* User Bio and Info */}
+          <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-extrabold text-[var(--text-primary)] leading-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] leading-tight">
                 {user.displayName}
               </h2>
-              <p className="text-xs text-[var(--text-muted)]">@{user.username}</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)]">@{user.username}</p>
             </div>
 
-            <p className="text-sm text-[var(--text-secondary)] max-w-xl font-normal leading-relaxed">
-              {user.bio}
-            </p>
+            {user.bio && (
+              <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-xl font-normal leading-relaxed">
+                {user.bio}
+              </p>
+            )}
 
-            {/* Followers / Posts Counts */}
-            <div className="flex gap-6 text-xs font-bold pt-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[var(--text-primary)] font-extrabold">{userPosts.length}</span>
-                <span className="text-[var(--text-muted)] font-medium">Relatos</span>
+            {/* 3-Column Stats Grid */}
+            <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[var(--bg-subtle)]/70 border border-[var(--border-subtle)] text-center">
+              <div className="flex flex-col items-center">
+                <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{userPosts.length}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Relatos</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[var(--text-primary)] font-extrabold">{user.followersCount}</span>
-                <span className="text-[var(--text-muted)] font-medium">Seguidores</span>
+              <div className="flex flex-col items-center border-x border-[var(--border-subtle)]">
+                <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{user.followersCount}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguidores</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[var(--text-primary)] font-extrabold">{user.followingCount}</span>
-                <span className="text-[var(--text-muted)] font-medium">Seguindo</span>
+              <div className="flex flex-col items-center">
+                <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{user.followingCount}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguindo</span>
               </div>
             </div>
           </div>
@@ -165,12 +168,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex gap-1 p-1 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] animate-slide-up stagger-2">
+      <div className="flex gap-1.5 p-1.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] animate-slide-up stagger-2">
         <button
           onClick={() => setProfileTab('posts')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex-1 justify-center ${
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
             profileTab === 'posts'
-              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
+              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
@@ -179,9 +182,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
         </button>
         <button
           onClick={() => setProfileTab('moments')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex-1 justify-center ${
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
             profileTab === 'moments'
-              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
+              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
@@ -190,9 +193,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
         </button>
         <button
           onClick={() => setProfileTab('gallery')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex-1 justify-center ${
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
             profileTab === 'gallery'
-              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
+              ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
@@ -294,20 +297,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
             {allUserPhotos.map((item, idx) => (
               <button
                 key={idx}
-                onClick={() => {
-                  setProfileTab('posts');
-                  setTimeout(() => {
-                    const el = document.getElementById(`post-${item.post.id}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      el.classList.add('ring-2', 'ring-[var(--clr-primary)]');
-                      setTimeout(() => {
-                        el.classList.remove('ring-2', 'ring-[var(--clr-primary)]');
-                      }, 2000);
-                    }
-                  }, 100);
-                }}
-                className="relative aspect-square rounded-2xl overflow-hidden group shadow-md border border-[var(--border-subtle)] hover:shadow-lg transition-all duration-300 animate-scale-in focus:outline-none text-left"
+                onClick={() => setExpandedPhotoUrl(item.photo)}
+                className="relative aspect-square rounded-2xl overflow-hidden group shadow-md border border-[var(--border-subtle)] hover:shadow-xl transition-all duration-300 animate-scale-in focus:outline-none text-left cursor-zoom-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <img
@@ -315,9 +306,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                   alt={`User photo ${idx}`}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                  <span className="text-[10px] text-white font-bold tracking-wider">
-                    Visualizar Relato
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-3">
+                  <span className="text-[10px] text-white font-bold tracking-wider bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-md">
+                    Tela Cheia
                   </span>
                 </div>
               </button>

@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import type { Post } from '../mockData';
 import { useApp } from '../context/AppContext';
 import { CommentSection } from './CommentSection';
-import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2, X } from 'lucide-react';
+import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const { toggleLike, setSelectedUser, setActiveTab, currentUser, deletePost } = useApp();
+  const { toggleLike, setSelectedUser, setActiveTab, currentUser, deletePost, setExpandedPhotoUrl } = useApp();
   const [showComments, setShowComments] = useState(false);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-  const [isZoomed, setIsZoomed] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -135,7 +134,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
               src={post.photos[activePhotoIdx]}
               alt={`Trip photo ${activePhotoIdx + 1}`}
               className="w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.03]"
-              onClick={() => setIsZoomed(true)}
+              onClick={() => setExpandedPhotoUrl(post.photos[activePhotoIdx])}
             />
             {/* Photo overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -226,26 +225,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </div>
       )}
 
-      {/* Lightbox Zoom Modal */}
-      {isZoomed && (
-        <div 
-          className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setIsZoomed(false)}
-        >
-          <button 
-            className="absolute top-6 right-6 p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10"
-            onClick={() => setIsZoomed(false)}
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          <img
-            src={post.photos[activePhotoIdx]}
-            alt="Expanded trip"
-            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-scale-in"
-          />
-        </div>
-      )}
+ 
 
       {/* Custom Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (

@@ -8,10 +8,10 @@ import { NewPostModal } from './components/NewPostModal';
 import { EditProfileModal } from './components/EditProfileModal';
 import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
-import { Compass, Users, Sparkles, MapPin } from 'lucide-react';
+import { Compass, Users, Sparkles, MapPin, X } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, selectedUser, currentUser, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen } = useApp();
+  const { posts, activeTab, selectedUser, currentUser, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl } = useApp();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedType, setFeedType] = useState<'global' | 'following'>('global');
 
@@ -60,7 +60,7 @@ function App() {
       <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 bg-[var(--bg-base)]/70 backdrop-blur-xl border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
+        <header className="sticky top-0 bg-[var(--bg-base)]/95 backdrop-blur-2xl border-b border-[var(--border-subtle)] px-6 pb-3.5 pt-[max(env(safe-area-inset-top),1.25rem)] flex items-center justify-between z-40 transition-colors duration-300 md:pt-4 md:h-16">
           {/* Mobile Logo */}
           <div className="flex items-center gap-2.5 md:hidden">
             <div className="gradient-primary p-1.5 rounded-xl shadow-md">
@@ -166,6 +166,29 @@ function App() {
 
       {/* Edit Profile Dialog Modal */}
       <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
+
+      {/* Global Fullscreen Lightbox Zoom Modal */}
+      {expandedPhotoUrl && (
+        <div 
+          className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+          onClick={() => setExpandedPhotoUrl(null)}
+        >
+          <button 
+            className="absolute top-[max(env(safe-area-inset-top),1.5rem)] right-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10 focus:outline-none"
+            onClick={() => setExpandedPhotoUrl(null)}
+            title="Fechar foto"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <img
+            src={expandedPhotoUrl}
+            alt="Foto expandida em tela cheia"
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

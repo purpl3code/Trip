@@ -52,6 +52,8 @@ interface AppContextType {
   deletePost: (postId: string) => Promise<void>;
   isEditProfileOpen: boolean;
   setIsEditProfileOpen: (isOpen: boolean) => void;
+  expandedPhotoUrl: string | null;
+  setExpandedPhotoUrl: (url: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -67,6 +69,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string | null>(null);
 
   // App core data states
   const [posts, setPosts] = useState<Post[]>([]);
@@ -794,6 +797,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deletePost,
         isEditProfileOpen,
         setIsEditProfileOpen,
+        expandedPhotoUrl,
+        setExpandedPhotoUrl,
       }}
     >
       {children}
