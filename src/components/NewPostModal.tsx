@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Upload } from 'lucide-react';
+import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Upload, Sparkles } from 'lucide-react';
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -136,20 +136,20 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
       {/* Modal Card */}
-      <div className="glass-panel w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+      <div className="glass-panel w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-modal flex flex-col max-h-[90vh]">
         
         {croppingIdx !== null ? (
           /* Cropper View */
           <div className="flex flex-col h-full overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 dark:border-white/5">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white">Recortar Imagem</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">Recortar Imagem</h2>
               <button
                 type="button"
                 onClick={() => setCroppingIdx(null)}
-                className="p-1.5 rounded-full hover:bg-white/20 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all"
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -158,17 +158,18 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
             {/* Body */}
             <div className="flex-1 p-6 flex flex-col justify-center items-center space-y-6 overflow-y-auto">
               <div 
-                className="w-64 h-64 rounded-2xl border-2 border-indigo-500 shadow-2xl overflow-hidden bg-gray-900 relative"
+                className="w-64 h-64 rounded-2xl border-2 border-[var(--clr-primary)] shadow-2xl overflow-hidden relative"
                 style={{
                   backgroundImage: `url(${croppingImgUrl})`,
                   backgroundPosition: imgIsLandscape ? `${cropOffset * 100}% center` : `center ${cropOffset * 100}%`,
                   backgroundSize: imgIsLandscape ? 'auto 100%' : '100% auto',
-                  backgroundRepeat: 'no-repeat'
+                  backgroundRepeat: 'no-repeat',
+                  backgroundColor: 'var(--bg-subtle)'
                 }}
               />
 
               <div className="w-full max-w-xs space-y-2">
-                <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between text-xs font-bold text-[var(--text-muted)]">
                   <span>Ajustar área de corte (1:1)</span>
                   <span>{(cropOffset * 100).toFixed(0)}%</span>
                 </div>
@@ -179,24 +180,25 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                   step="0.01" 
                   value={cropOffset} 
                   onChange={(e) => setCropOffset(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--clr-primary)]"
+                  style={{ background: `linear-gradient(to right, var(--clr-primary) ${cropOffset * 100}%, var(--bg-subtle) ${cropOffset * 100}%)` }}
                 />
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="px-6 py-4 border-t border-white/10 dark:border-white/5 flex gap-3 bg-gray-50/50 dark:bg-slate-900/50">
+            <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex gap-3 bg-[var(--bg-subtle)]/50">
               <button
                 type="button"
                 onClick={() => setCroppingIdx(null)}
-                className="flex-1 py-3 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-white/10 rounded-2xl font-bold transition-all text-sm"
+                className="flex-1 py-3 btn-secondary rounded-2xl text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={applyCrop}
-                className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-bold transition-all text-sm shadow-lg shadow-indigo-500/25"
+                className="flex-1 py-3 btn-primary rounded-2xl text-sm"
               >
                 Confirmar Corte
               </button>
@@ -206,12 +208,17 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
           /* Normal Post Form View */
           <>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 dark:border-white/5">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white">Relatar Nova Experiência</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2.5">
+                <div className="gradient-primary p-1.5 rounded-xl">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Relatar Nova Experiência</h2>
+              </div>
               <button
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="p-1.5 rounded-full hover:bg-white/20 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all disabled:opacity-50"
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -220,9 +227,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
             {/* Content Form */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
               {/* Location */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+              <div className="space-y-2 animate-slide-up stagger-1">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[var(--clr-teal)]" />
                   Onde você esteve?
                 </label>
                 <input
@@ -232,15 +239,15 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                   placeholder="Nome do local ou estabelecimento"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)] disabled:opacity-50"
                 />
               </div>
 
               {/* Rating & Verdict */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up stagger-2">
                 {/* Rating Stars */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Sua Avaliação (1 a 5 estrelas)
                   </label>
                   <div className="flex items-center gap-1.5">
@@ -250,13 +257,13 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => setRating(star)}
-                        className="p-1 transition-transform active:scale-90 disabled:opacity-50"
+                        className="p-1 transition-all active:scale-90 disabled:opacity-50 hover:scale-110"
                       >
                         <Star
-                          className={`w-6 h-6 transition-colors ${
+                          className={`w-6 h-6 transition-colors duration-200 ${
                             star <= rating
-                              ? 'fill-amber-400 text-amber-400'
-                              : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'
+                              ? 'fill-[var(--clr-primary)] text-[var(--clr-primary)]'
+                              : 'text-[var(--text-muted)] hover:text-[var(--clr-primary-light)]'
                           }`}
                         />
                       </button>
@@ -266,7 +273,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
 
                 {/* Verdict */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Veredito Rápido
                   </label>
                   <div className="flex gap-2">
@@ -274,10 +281,10 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => setVerdict('Gostei')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
                         verdict === 'Gostei'
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-md shadow-emerald-500/5'
-                          : 'border-white/10 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-white/20 dark:hover:bg-white/5'
+                          ? 'bg-[var(--clr-success)]/15 border-[var(--clr-success)] text-[var(--clr-success)] shadow-sm'
+                          : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
                       }`}
                     >
                       <ThumbsUp className="w-4 h-4" />
@@ -287,10 +294,10 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => setVerdict('Não gostei')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
                         verdict === 'Não gostei'
-                          ? 'bg-rose-500/20 border-rose-500 text-rose-500 shadow-md shadow-rose-500/5'
-                          : 'border-white/10 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-white/20 dark:hover:bg-white/5'
+                          ? 'bg-[var(--clr-danger)]/15 border-[var(--clr-danger)] text-[var(--clr-danger)] shadow-sm'
+                          : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
                       }`}
                     >
                       <ThumbsDown className="w-4 h-4" />
@@ -301,8 +308,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               </div>
 
               {/* Description Content */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <div className="space-y-2 animate-slide-up stagger-3">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                   O que achou da experiência?
                 </label>
                 <textarea
@@ -312,15 +319,15 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                   placeholder="Como foi a sua experiência?"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all placeholder-gray-400 dark:placeholder-gray-500 resize-none disabled:opacity-50"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)] resize-none disabled:opacity-50"
                 />
               </div>
 
               {/* Photo Attachments */}
-              <div className="space-y-3">
+              <div className="space-y-3 animate-slide-up stagger-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[var(--clr-primary)]" />
                     Adicionar Fotos ({photoFiles.length})
                   </label>
                   
@@ -337,7 +344,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                     />
                     <label
                       htmlFor="file-upload"
-                      className="text-xs text-indigo-500 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-[var(--clr-primary)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       Upload
@@ -347,12 +354,12 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
 
                 {/* Display Attached Photos List (Files only) */}
                 {photoFiles.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto py-1">
+                  <div className="flex gap-2 overflow-x-auto py-1 no-scrollbar">
                     {/* Render Custom Files */}
                     {photoFiles.map((file, idx) => {
                       const fileUrl = URL.createObjectURL(file);
                       return (
-                        <div key={`file-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/20 flex-shrink-0">
+                        <div key={`file-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[var(--border-subtle)] flex-shrink-0 group">
                           <img src={fileUrl} alt="File attached preview" className="w-full h-full object-cover" />
                           
                           {/* Crop Button */}
@@ -360,7 +367,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                             type="button"
                             disabled={isSubmitting}
                             onClick={() => setCroppingIdx(idx)}
-                            className="absolute bottom-1 left-1 bg-black/75 hover:bg-indigo-600 text-white rounded-lg px-1.5 py-0.5 text-[10px] font-bold transition-colors"
+                            className="absolute bottom-1 left-1 bg-black/70 hover:bg-[var(--clr-primary)] text-white rounded-lg px-1.5 py-0.5 text-[10px] font-bold transition-colors"
                           >
                             Cortar
                           </button>
@@ -370,7 +377,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                             type="button"
                             disabled={isSubmitting}
                             onClick={() => handleRemoveFile(idx)}
-                            className="absolute top-1 right-1 bg-black/75 text-white rounded-full p-1 hover:bg-rose-600 transition-colors"
+                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 hover:bg-[var(--clr-danger)] transition-colors"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -382,11 +389,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
               </div>
 
               {/* Form Actions */}
-              <div className="pt-2">
+              <div className="pt-2 animate-slide-up stagger-5">
                 <button
                   type="submit"
                   disabled={isSubmitting || !content.trim() || !location.trim()}
-                  className="w-full py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 btn-primary rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
@@ -395,7 +402,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) =
                     </>
                   ) : (
                     <>
-                      <span>Publicar Relato 🚀</span>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Publicar Relato</span>
                     </>
                   )}
                 </button>

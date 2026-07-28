@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Compass, Mail, Lock, User, Sparkles, AlertCircle } from 'lucide-react';
+import { Compass, Mail, Lock, User, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const AuthView: React.FC = () => {
   const { authError, isAuthLoading, handleSignIn, handleSignUp } = useApp();
@@ -24,30 +24,39 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f1f3f6] dark:bg-[#090a0d] text-slate-800 dark:text-slate-100 flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
-      {/* Decorative gradient glowing blur elements in background */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/5 blur-[120px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-pink-500/10 dark:bg-pink-500/5 blur-[120px] pointer-events-none z-0" />
+    <div className="min-h-screen mesh-bg flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
+      {/* Animated mesh orbs */}
+      <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--clr-primary)]/8 blur-[100px] pointer-events-none animate-float" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[45%] h-[45%] rounded-full bg-[var(--clr-teal)]/6 blur-[100px] pointer-events-none animate-float" style={{ animationDelay: '1.5s' }} />
+      <div className="absolute top-[30%] right-[15%] w-[30%] h-[30%] rounded-full bg-[var(--clr-coral)]/5 blur-[80px] pointer-events-none animate-float" style={{ animationDelay: '3s' }} />
 
-      {/* Main Glassmorphism Form Card */}
-      <div className="glass-panel w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      {/* Main Card */}
+      <div className="glass-panel w-full max-w-md rounded-3xl p-7 md:p-9 relative z-10 animate-modal">
         
+        {/* Gradient border accent */}
+        <div className="absolute inset-0 rounded-3xl gradient-border pointer-events-none" />
+
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="bg-black dark:bg-slate-900 p-3 rounded-2xl shadow-lg border border-white/10 dark:border-white/5 mb-3">
-            <Compass className="w-8 h-8 text-white animate-spin-slow" />
+        <div className="flex flex-col items-center text-center mb-8 animate-slide-up">
+          <div className="relative mb-4">
+            <div className="absolute inset-0 rounded-2xl animate-glow-pulse" />
+            <div className="relative gradient-primary p-3.5 rounded-2xl shadow-lg">
+              <Compass className="w-8 h-8 text-white animate-spin-slow" />
+            </div>
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-widest">
-            TRIP
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold tracking-widest uppercase mt-1">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-3xl font-black tracking-widest gradient-primary-text">
+              TRIP
+            </h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] font-semibold tracking-wider uppercase mt-1.5">
             Diário Social de Viagens & Comidas
           </p>
         </div>
 
         {/* Auth Error Banner */}
         {authError && (
-          <div className="p-3.5 mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-500 font-bold flex items-center gap-2 animate-in slide-in-from-top-1">
+          <div className="p-3.5 mb-5 rounded-2xl bg-[var(--clr-danger)]/10 border border-[var(--clr-danger)]/20 text-xs text-[var(--clr-danger)] font-bold flex items-center gap-2 animate-slide-down">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{authError}</span>
           </div>
@@ -59,9 +68,9 @@ export const AuthView: React.FC = () => {
           {isSignUp && (
             <>
               {/* Display Name */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3 h-3 text-indigo-500" />
+              <div className="space-y-1.5 animate-slide-up stagger-1">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-[var(--clr-primary)]" />
                   Nome de Exibição
                 </label>
                 <input
@@ -70,14 +79,14 @@ export const AuthView: React.FC = () => {
                   placeholder="Seu nome completo"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
                 />
               </div>
 
               {/* Username */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3 h-3 text-indigo-500" />
+              <div className="space-y-1.5 animate-slide-up stagger-2">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-[var(--clr-primary)]" />
                   Nome de Usuário (@handle)
                 </label>
                 <input
@@ -86,14 +95,14 @@ export const AuthView: React.FC = () => {
                   placeholder="Nome de usuário desejado"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                  className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
                 />
               </div>
 
               {/* Bio */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-indigo-500" />
+              <div className="space-y-1.5 animate-slide-up stagger-3">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-[var(--clr-primary)]" />
                   Bio curta (opcional)
                 </label>
                 <input
@@ -101,16 +110,16 @@ export const AuthView: React.FC = () => {
                   placeholder="Fale um pouco sobre você..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
                 />
               </div>
             </>
           )}
 
           {/* Email */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Mail className="w-3 h-3 text-indigo-500" />
+          <div className="space-y-1.5 animate-slide-up stagger-4">
+            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+              <Mail className="w-3 h-3 text-[var(--clr-primary)]" />
               E-mail
             </label>
             <input
@@ -119,14 +128,14 @@ export const AuthView: React.FC = () => {
               placeholder="Digite seu e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
+              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
             />
           </div>
 
           {/* Password */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Lock className="w-3 h-3 text-indigo-500" />
+          <div className="space-y-1.5 animate-slide-up stagger-5">
+            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+              <Lock className="w-3 h-3 text-[var(--clr-primary)]" />
               Senha
             </label>
             <input
@@ -136,13 +145,13 @@ export const AuthView: React.FC = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl glass-input focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm text-gray-800 dark:text-white transition-all"
+              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
             />
           </div>
 
           {/* Keep Connected Checkbox */}
           {!isSignUp && (
-            <div className="flex items-center gap-2 py-1">
+            <div className="flex items-center gap-2.5 py-1 animate-slide-up stagger-6">
               <input
                 type="checkbox"
                 id="keep-logged"
@@ -151,9 +160,9 @@ export const AuthView: React.FC = () => {
                   setKeepLogged(e.target.checked);
                   localStorage.setItem('trip_keep_logged', e.target.checked ? 'true' : 'false');
                 }}
-                className="w-4 h-4 rounded text-indigo-500 border-white/20 dark:border-white/5 bg-white/20 dark:bg-white/5 focus:ring-indigo-500/50"
+                className="w-4 h-4 rounded accent-[var(--clr-primary)] cursor-pointer"
               />
-              <label htmlFor="keep-logged" className="text-xs font-bold text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+              <label htmlFor="keep-logged" className="text-xs font-semibold text-[var(--text-muted)] cursor-pointer select-none">
                 Mantenha-me conectado
               </label>
             </div>
@@ -163,24 +172,30 @@ export const AuthView: React.FC = () => {
           <button
             type="submit"
             disabled={isAuthLoading}
-            className="w-full py-4 mt-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 text-sm"
+            className="w-full py-4 mt-2 btn-primary rounded-2xl text-sm flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed animate-slide-up stagger-7"
           >
             {isAuthLoading ? (
               <span className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
             ) : isSignUp ? (
-              'Criar Minha Conta ✨'
+              <>
+                <span>Criar Minha Conta</span>
+                <Sparkles className="w-4 h-4" />
+              </>
             ) : (
-              'Acessar Minha Conta 🚀'
+              <>
+                <span>Acessar Minha Conta</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
           </button>
         </form>
 
         {/* Toggle Switch */}
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className="mt-6 text-center text-xs text-[var(--text-muted)] animate-slide-up stagger-8">
           <span>{isSignUp ? 'Já possui uma conta?' : 'Ainda não tem conta?'}</span>{' '}
           <button
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-indigo-500 hover:underline font-bold"
+            className="text-[var(--clr-primary)] hover:underline font-bold transition-colors"
           >
             {isSignUp ? 'Fazer Login' : 'Cadastre-se'}
           </button>

@@ -37,47 +37,46 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 space-y-4">
+    <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] space-y-4">
       {/* Comments List */}
       {post.comments.length > 0 ? (
-        <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
-          {post.comments.map((comment) => (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+          {post.comments.map((comment, idx) => (
             <div
               key={comment.id}
-              className="p-3.5 rounded-2xl bg-white/20 dark:bg-white/5 border border-white/25 dark:border-white/5 text-xs text-gray-800 dark:text-gray-200"
+              className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-xs animate-slide-up"
+              style={{ animationDelay: `${idx * 50}ms` }}
             >
               <div className="flex justify-between items-start mb-2">
                 <button
                   onClick={() => handleUserClick(comment.user)}
-                  className="flex items-center gap-2 hover:opacity-85 text-left"
+                  className="flex items-center gap-2 hover:opacity-85 text-left group"
                 >
                   <img
                     src={comment.user.avatar}
                     alt={comment.user.displayName}
-                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-indigo-500/20"
+                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-[var(--clr-primary)]/20"
                   />
                   <div>
-                    <h5 className="font-bold text-gray-800 dark:text-white leading-tight">
+                    <h5 className="font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--clr-primary)] transition-colors">
                       {comment.user.displayName}
                     </h5>
-                    <p className="text-[9px] text-gray-400">@{comment.user.username}</p>
+                    <p className="text-[9px] text-[var(--text-muted)]">@{comment.user.username}</p>
                   </div>
                 </button>
 
                 {/* Optional Comment Rating */}
                 {comment.rating !== undefined && (
-                  <div className="flex items-center gap-1.5 bg-indigo-500/10 dark:bg-indigo-500/5 px-2 py-1 rounded-lg border border-indigo-500/20">
-                    <div className="flex text-amber-400">
+                  <div className="flex items-center gap-1.5 chip chip-amber">
+                    <div className="flex">
                       {Array.from({ length: comment.rating }).map((_, idx) => (
-                        <Star key={idx} className="w-3.5 h-3.5 fill-current" />
+                        <Star key={idx} className="w-3 h-3 fill-current text-[var(--clr-primary)]" />
                       ))}
                     </div>
                     {comment.verdict && (
-                      <span
-                        className={`text-[9px] font-bold ${
-                          comment.verdict === 'Gostei' ? 'text-emerald-500' : 'text-rose-500'
-                        }`}
-                      >
+                      <span className={`text-[9px] font-bold ${
+                        comment.verdict === 'Gostei' ? 'text-[var(--clr-success)]' : 'text-[var(--clr-danger)]'
+                      }`}>
                         {comment.verdict === 'Gostei' ? 'Gostou' : 'Não Gostou'}
                       </span>
                     )}
@@ -85,10 +84,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
                 )}
               </div>
 
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-normal">
+              <p className="text-[var(--text-secondary)] leading-relaxed font-normal">
                 {comment.content}
               </p>
-              <span className="block mt-1.5 text-[8px] text-gray-400 text-right">
+              <span className="block mt-1.5 text-[8px] text-[var(--text-muted)] text-right">
                 {new Date(comment.createdAt).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: 'short',
@@ -100,7 +99,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-400 text-center py-4">Nenhum comentário. Seja o primeiro a opinar!</p>
+        <p className="text-xs text-[var(--text-muted)] text-center py-4">Nenhum comentário. Seja o primeiro a opinar!</p>
       )}
 
       {/* Comment Form */}
@@ -110,10 +109,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
           <button
             type="button"
             onClick={() => setHasRating(!hasRating)}
-            className={`text-[10px] font-bold py-1 px-2.5 rounded-lg border transition-all ${
+            className={`text-[10px] font-bold py-1.5 px-3 rounded-xl border transition-all duration-300 ${
               hasRating
-                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-500'
-                : 'border-white/20 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:bg-white/20'
+                ? 'bg-[var(--clr-primary)]/15 border-[var(--clr-primary)] text-[var(--clr-primary)]'
+                : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
             }`}
           >
             {hasRating ? '✓ Adicionando Nota' : '+ Dar sua nota a este local'}
@@ -122,7 +121,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
 
         {/* Rating selectors if enabled */}
         {hasRating && (
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 animate-in slide-in-from-top-1 duration-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-[var(--clr-primary)]/5 border border-[var(--clr-primary)]/10 animate-slide-down">
             {/* Stars */}
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -133,8 +132,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
                   className="p-0.5 active:scale-90 transition-transform"
                 >
                   <Star
-                    className={`w-4 h-4 ${
-                      star <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600'
+                    className={`w-4 h-4 transition-colors ${
+                      star <= rating ? 'fill-[var(--clr-primary)] text-[var(--clr-primary)]' : 'text-[var(--text-muted)]'
                     }`}
                   />
                 </button>
@@ -146,10 +145,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
               <button
                 type="button"
                 onClick={() => setVerdict('Gostei')}
-                className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg border text-[10px] font-bold transition-all ${
+                className={`flex items-center gap-1.5 py-1 px-2.5 rounded-xl border text-[10px] font-bold transition-all duration-300 ${
                   verdict === 'Gostei'
-                    ? 'bg-emerald-500/25 border-emerald-500 text-emerald-500'
-                    : 'border-white/10 text-gray-500 hover:bg-white/10'
+                    ? 'bg-[var(--clr-success)]/15 border-[var(--clr-success)] text-[var(--clr-success)]'
+                    : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
                 }`}
               >
                 <ThumbsUp className="w-3 h-3" />
@@ -158,10 +157,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
               <button
                 type="button"
                 onClick={() => setVerdict('Não gostei')}
-                className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg border text-[10px] font-bold transition-all ${
+                className={`flex items-center gap-1.5 py-1 px-2.5 rounded-xl border text-[10px] font-bold transition-all duration-300 ${
                   verdict === 'Não gostei'
-                    ? 'bg-rose-500/25 border-rose-500 text-rose-500'
-                    : 'border-white/10 text-gray-500 hover:bg-white/10'
+                    ? 'bg-[var(--clr-danger)]/15 border-[var(--clr-danger)] text-[var(--clr-danger)]'
+                    : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
                 }`}
               >
                 <ThumbsDown className="w-3 h-3" />
@@ -179,12 +178,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ post }) => {
             placeholder={hasRating ? "Opine sobre o local..." : "Escreva um comentário..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-xl glass-input text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 px-4 py-2.5 rounded-xl glass-input text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
           />
           <button
             type="submit"
             disabled={!content.trim()}
-            className="p-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl flex items-center justify-center transition-colors active:scale-95 duration-150"
+            className="p-2.5 btn-primary rounded-xl flex items-center justify-center disabled:opacity-50 active:scale-95 transition-all duration-150"
           >
             <Send className="w-4 h-4" />
           </button>

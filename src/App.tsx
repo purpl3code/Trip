@@ -18,11 +18,22 @@ function App() {
   // Guard clause: show a loading screen during session recovery to prevent login view flash
   if (isSessionLoading) {
     return (
-      <div className="min-h-screen bg-[#f1f3f6] dark:bg-[#090a0d] text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center gap-3">
-        <Compass className="w-12 h-12 text-indigo-500 animate-spin-slow" />
-        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase">
-          Carregando Diário...
-        </span>
+      <div className="min-h-screen mesh-bg flex flex-col items-center justify-center gap-5">
+        {/* Logo pulse */}
+        <div className="relative">
+          <div className="absolute inset-0 rounded-2xl animate-glow-pulse" />
+          <div className="relative gradient-primary p-4 rounded-2xl shadow-lg">
+            <Compass className="w-10 h-10 text-white animate-spin-slow" />
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-xl font-black tracking-widest gradient-primary-text">
+            TRIP
+          </span>
+          <div className="loading-dots">
+            <span /><span /><span />
+          </div>
+        </div>
       </div>
     );
   }
@@ -40,30 +51,31 @@ function App() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f1f3f6] dark:bg-[#090a0d] text-slate-800 dark:text-slate-100 flex transition-colors duration-300">
-      {/* Decorative gradient glowing blur elements in background */}
-      <div className="fixed top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/5 blur-[120px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-pink-500/10 dark:bg-pink-500/5 blur-[120px] pointer-events-none z-0" />
+    <div className="min-h-screen mesh-bg flex transition-colors duration-500">
 
       {/* Sidebar for Desktop */}
       <Sidebar onOpenNewPost={() => setIsNewPostOpen(true)} />
 
       {/* Main Layout Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
+      <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 bg-white/50 dark:bg-[#090a0d]/50 backdrop-blur-md border-b border-white/20 dark:border-white/5 px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
-          <div className="flex items-center gap-2 md:hidden">
-            <div className="bg-black dark:bg-slate-900 p-1.5 rounded-lg border border-white/10 dark:border-white/5">
+        <header className="sticky top-0 bg-[var(--bg-base)]/70 backdrop-blur-xl border-b border-[var(--border-subtle)] px-6 py-4 flex items-center justify-between z-30 transition-colors duration-300 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4 md:h-16">
+          {/* Mobile Logo */}
+          <div className="flex items-center gap-2.5 md:hidden">
+            <div className="gradient-primary p-1.5 rounded-xl shadow-md">
               <Compass className="w-5 h-5 text-white animate-spin-slow" />
             </div>
-            <span className="text-lg font-black text-gray-900 dark:text-white tracking-widest">
-              TRIP
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-black tracking-widest gradient-primary-text">
+                TRIP
+              </span>
+            </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400">
-            <Sparkles className="w-4 h-4 text-indigo-500" />
+          {/* Desktop welcome */}
+          <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
+            <Sparkles className="w-4 h-4 text-[var(--clr-primary)]" />
             <span>Bem-vindo de volta ao seu diário de bordo!</span>
           </div>
 
@@ -74,19 +86,19 @@ function App() {
           
           {/* Feed View */}
           {activeTab === 'feed' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
               {/* Feed Title & Toggles */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black tracking-tight text-gray-800 dark:text-white">Linha do Tempo</h2>
+              <div className="flex items-center justify-between animate-slide-up">
+                <h2 className="text-xl font-black tracking-tight text-[var(--text-primary)]">Linha do Tempo</h2>
                 
                 {/* Explorer vs Following Tab */}
-                <div className="flex p-0.5 rounded-xl bg-white/20 dark:bg-white/5 border border-white/30 dark:border-white/5">
+                <div className="flex p-1 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
                   <button
                     onClick={() => setFeedType('global')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
                       feedType === 'global'
-                        ? 'bg-white dark:bg-white/10 text-indigo-500 dark:text-white shadow-sm'
-                        : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
+                        ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                     }`}
                   >
                     <Compass className="w-3.5 h-3.5" />
@@ -94,10 +106,10 @@ function App() {
                   </button>
                   <button
                     onClick={() => setFeedType('following')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
                       feedType === 'following'
-                        ? 'bg-white dark:bg-white/10 text-indigo-500 dark:text-white shadow-sm'
-                        : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'
+                        ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                     }`}
                   >
                     <Users className="w-3.5 h-3.5" />
@@ -108,16 +120,18 @@ function App() {
 
               {/* Feed Posts List */}
               {displayedPosts.length > 0 ? (
-                <div className="space-y-4">
-                  {displayedPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                <div className="space-y-5">
+                  {displayedPosts.map((post, idx) => (
+                    <div key={post.id} className="animate-slide-up" style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}>
+                      <PostCard post={post} />
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="glass-card rounded-3xl p-12 text-center text-gray-400 space-y-3">
-                  <MapPin className="w-10 h-10 mx-auto text-indigo-500/40" />
-                  <h3 className="font-extrabold text-sm text-gray-700 dark:text-gray-300">Nenhum relato por aqui</h3>
-                  <p className="text-xs max-w-sm mx-auto font-normal">
+                <div className="glass-card rounded-3xl p-12 text-center space-y-3 animate-scale-in">
+                  <MapPin className="w-10 h-10 mx-auto text-[var(--clr-primary)]/40" />
+                  <h3 className="font-extrabold text-sm text-[var(--text-primary)]">Nenhum relato por aqui</h3>
+                  <p className="text-xs max-w-sm mx-auto font-normal text-[var(--text-muted)]">
                     {feedType === 'following'
                       ? 'As pessoas que você segue ainda não postaram nada. Alterne para a aba "Explorar" para descobrir novos destinos!'
                       : 'Nenhuma postagem encontrada.'}
@@ -129,12 +143,14 @@ function App() {
 
           {/* Search View */}
           {activeTab === 'search' && (
-            <SearchView />
+            <div className="animate-fade-in">
+              <SearchView />
+            </div>
           )}
 
           {/* Profile View */}
           {activeTab === 'profile' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
               {selectedUser && <UserProfile user={selectedUser} />}
             </div>
           )}
