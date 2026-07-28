@@ -67,19 +67,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   return (
     <div className="w-full space-y-6">
       {/* Profile Header Card */}
-      <div className="glass-card-elevated rounded-3xl overflow-hidden border border-[var(--border-subtle)] animate-slide-up shadow-xl">
-        {/* Banner */}
-        <div className="h-40 sm:h-52 w-full relative">
+      <div className="glass-card-elevated rounded-3xl overflow-hidden border border-[var(--border-subtle)] animate-slide-up shadow-xl relative">
+        {/* Banner Background Image with smooth gradient overlay fading into card background */}
+        <div className="absolute top-0 left-0 right-0 h-56 sm:h-64 pointer-events-none overflow-hidden">
           <img src={user.banner} alt="Profile banner" className="w-full h-full object-cover" />
-          {/* Mesh overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/20 to-transparent opacity-90" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--clr-primary)]/15 via-transparent to-[var(--clr-teal)]/15" />
+          {/* Smooth gradient from dark top fade down into bg-elevated */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-[var(--bg-elevated)]/65 to-[var(--bg-elevated)]" />
         </div>
 
-        {/* Profile Details Area */}
-        <div className="px-5 sm:px-6 pb-6 relative">
+        {/* Profile Details Area floating on top */}
+        <div className="px-5 sm:px-6 pt-16 sm:pt-20 pb-6 relative z-10 space-y-4">
           {/* Top Row: Avatar & Action Buttons */}
-          <div className="flex items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-4 relative z-10">
+          <div className="flex items-end justify-between gap-4">
             {/* Avatar */}
             <div className="avatar-ring p-[3px] rounded-2xl shadow-2xl bg-[var(--bg-elevated)] shrink-0">
               <img
@@ -149,18 +148,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
             )}
 
             {/* 3-Column Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[var(--bg-subtle)]/70 border border-[var(--border-subtle)] text-center">
+            <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[var(--bg-subtle)]/80 backdrop-blur-md border border-[var(--border-subtle)] text-center shadow-inner">
               <div className="flex flex-col items-center">
                 <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{userPosts.length}</span>
-                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Relatos</span>
+                <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider mt-1">Relatos</span>
               </div>
               <div className="flex flex-col items-center border-x border-[var(--border-subtle)]">
                 <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{user.followersCount}</span>
-                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguidores</span>
+                <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguidores</span>
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-base sm:text-lg font-black text-[var(--text-primary)] leading-none">{user.followingCount}</span>
-                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguindo</span>
+                <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider mt-1">Seguindo</span>
               </div>
             </div>
           </div>
@@ -171,36 +170,53 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
       <div className="flex gap-1.5 p-1.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)] animate-slide-up stagger-2">
         <button
           onClick={() => setProfileTab('posts')}
-          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 whitespace-nowrap ${
             profileTab === 'posts'
               ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
-          <Compass className="w-4 h-4" />
-          <span>Relatos ({userPosts.length})</span>
+          <Compass className="w-4 h-4 shrink-0" />
+          <span>Relatos</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+            profileTab === 'posts' ? 'bg-[var(--clr-primary)]/15 text-[var(--clr-primary)]' : 'bg-black/10 dark:bg-white/10 text-[var(--text-muted)]'
+          }`}>
+            {userPosts.length}
+          </span>
         </button>
+
         <button
           onClick={() => setProfileTab('moments')}
-          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 whitespace-nowrap ${
             profileTab === 'moments'
               ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
-          <MapPin className="w-4 h-4" />
-          <span>Momentos ({moments.length})</span>
+          <MapPin className="w-4 h-4 shrink-0" />
+          <span>Momentos</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+            profileTab === 'moments' ? 'bg-[var(--clr-primary)]/15 text-[var(--clr-primary)]' : 'bg-black/10 dark:bg-white/10 text-[var(--text-muted)]'
+          }`}>
+            {moments.length}
+          </span>
         </button>
+
         <button
           onClick={() => setProfileTab('gallery')}
-          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 justify-center shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300 flex-1 whitespace-nowrap ${
             profileTab === 'gallery'
               ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-md border border-[var(--border-subtle)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
-          <Grid className="w-4 h-4" />
-          <span>Fotos ({allUserPhotos.length})</span>
+          <Grid className="w-4 h-4 shrink-0" />
+          <span>Fotos</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+            profileTab === 'gallery' ? 'bg-[var(--clr-primary)]/15 text-[var(--clr-primary)]' : 'bg-black/10 dark:bg-white/10 text-[var(--text-muted)]'
+          }`}>
+            {allUserPhotos.length}
+          </span>
         </button>
       </div>
 
