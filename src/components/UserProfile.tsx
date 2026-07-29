@@ -68,19 +68,20 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
     <div className="w-full space-y-6">
       {/* Profile Header Card */}
       <div className="glass-card-elevated rounded-3xl overflow-hidden border border-[var(--border-subtle)] animate-slide-up shadow-xl relative">
-        {/* Banner Background Image spanning full card height with soft fading mask (Zero sharp cutoffs) */}
-        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
-          <img src={user.banner} alt="Profile banner" className="w-full h-full object-cover opacity-40 dark:opacity-30" />
-          {/* Smooth gradient fading image down seamlessly to bg-elevated */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-[var(--bg-elevated)]/80 to-[var(--bg-elevated)]" />
+        {/* Vibrant Banner Image Header */}
+        <div className="h-44 sm:h-56 w-full relative overflow-hidden">
+          <img src={user.banner} alt="Profile banner" className="w-full h-full object-cover" />
+          {/* Subtle gradient overlay fading softly into profile details */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-elevated)] via-[var(--bg-elevated)]/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent opacity-60" />
         </div>
 
-        {/* Profile Details Area floating on top */}
-        <div className="px-5 sm:px-6 pt-6 pb-6 relative z-10 space-y-4">
-          {/* Top Row: Avatar & Action Buttons */}
-          <div className="flex items-end justify-between gap-4 pt-2">
+        {/* Profile Details Area */}
+        <div className="px-5 sm:px-6 pb-6 relative z-10 space-y-4">
+          {/* Floating Avatar & Action Buttons Row */}
+          <div className="flex items-end justify-between gap-4 -mt-12 sm:-mt-14 mb-2">
             {/* Avatar */}
-            <div className="avatar-ring p-[3px] rounded-2xl shadow-2xl bg-[var(--bg-elevated)] shrink-0">
+            <div className="avatar-ring p-[3px] rounded-2xl shadow-2xl bg-[var(--bg-elevated)] shrink-0 z-20">
               <img
                 src={user.avatar}
                 alt={user.displayName}

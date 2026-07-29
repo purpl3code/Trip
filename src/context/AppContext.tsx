@@ -82,7 +82,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authError, setAuthError] = useState<string | null>(null);
   const [session, setSession] = useState<any>(null);
 
-  // Apply theme class to document element
+  // Apply theme class to document element & update mobile status bar theme metas
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === 'dark') {
@@ -91,6 +91,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       root.classList.remove('dark');
     }
     localStorage.setItem('trip_theme', theme);
+
+    // Update <meta name="theme-color"> dynamically
+    const themeColor = theme === 'dark' ? '#0B0E14' : '#F8FAFC';
+    const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+    if (metaThemeColors.length > 0) {
+      metaThemeColors.forEach((m) => m.setAttribute('content', themeColor));
+    } else {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', themeColor);
+      document.head.appendChild(meta);
+    }
+
+    // Update <meta name="apple-mobile-web-app-status-bar-style"> dynamically
+    const statusBarStyle = theme === 'dark' ? 'black-translucent' : 'default';
+    const metaStatusStyle = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (metaStatusStyle) {
+      metaStatusStyle.setAttribute('content', statusBarStyle);
+    }
   }, [theme]);
 
   const toggleTheme = () => {

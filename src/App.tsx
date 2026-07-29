@@ -60,7 +60,7 @@ function App() {
       <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
         
         {/* Top Header Bar */}
-        <header className="sticky top-0 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-6 pb-3 pt-[max(env(safe-area-inset-top,28px),28px)] flex items-center justify-between z-40 transition-colors duration-300 md:pt-4 md:h-16 shadow-sm">
+        <header className="sticky top-0 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-6 pb-3 pt-[max(env(safe-area-inset-top,48px),48px)] flex items-center justify-between z-40 transition-colors duration-300 md:pt-4 md:h-16 shadow-sm">
           {/* Mobile Logo */}
           <div className="flex items-center gap-2.5 md:hidden">
             <div className="gradient-primary p-1.5 rounded-xl shadow-md">
