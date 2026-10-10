@@ -11,7 +11,7 @@ import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
 import { Brand } from './components/Brand';
 import { Dialog } from './components/Dialog';
-import { ArrowRight, Compass, RefreshCw, Plus, MapPin, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { ArrowRight, RefreshCw, MapPin, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 function App() {
   const { posts, activeTab, currentUser, selectedUser, setSelectedUser, setActiveTab, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl, notice, dismissNotice, dataError, refreshData, isRefreshing } = useApp();
@@ -26,8 +26,6 @@ function App() {
   if (!currentUser) return <>{retry}<AuthView />{feedback}</>;
 
   const displayedPosts = feedType === 'global' ? posts : posts.filter(post => post.user.id === currentUser.id || post.user.isFollowing);
-  const ownPosts = posts.filter(post => post.user.id === currentUser.id);
-  const locations = new Set(ownPosts.map(post => post.location.trim().toLowerCase())).size;
   const openProfile = () => { setSelectedUser(currentUser); setActiveTab('profile'); };
   return (
     <div className={`app-shell ${Capacitor.isNativePlatform() ? 'native-app' : ''}`}>
@@ -42,12 +40,6 @@ function App() {
         <main id="main-content" className="app-content">
           {retry}
           {activeTab === 'feed' && <>
-            <section className="feed-welcome">
-              <div className="welcome-copy"><span className="eyebrow">SEU DIÁRIO DE BORDO</span><h1>Que história vamos<br />guardar hoje?</h1><p>Olá, {currentUser.displayName.split(' ')[0]}. Um novo lugar, um sabor ou um momento que vale compartilhar.</p><button className="btn-primary welcome-button" onClick={() => setIsNewPostOpen(true)}><Plus size={18} /> Criar um relato <ArrowRight size={16} /></button></div>
-              <div className="welcome-decoration" aria-hidden="true"><Compass size={110} strokeWidth={1} /><span className="orbit-dot" /><span className="orbit-dot second" /></div>
-              <div className="welcome-stats"><span><strong>{ownPosts.length}</strong> relatos</span><span><strong>{locations}</strong> lugares descobertos</span></div>
-            </section>
-            <button className="composer-shortcut" onClick={() => setIsNewPostOpen(true)}><img src={currentUser.avatar} alt="" /><span>Qual foi sua última descoberta?</span><Plus size={20} /></button>
             <div className="section-heading"><div><h2>Seu próximo destino começa aqui</h2><p>Experiências reais de quem esteve lá.</p></div><button className="icon-button" aria-label="Atualizar relatos" onClick={() => void refreshData()} disabled={isRefreshing}><RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} /></button></div>
             <div className="segmented-control feed-filter" aria-label="Filtrar relatos"><button aria-pressed={feedType === 'global'} onClick={() => setFeedType('global')}>Explorar</button><button aria-pressed={feedType === 'following'} onClick={() => setFeedType('following')}>Seguindo</button></div>
             <div className="post-list">{displayedPosts.map(post => <PostCard key={post.id} post={post} />)}</div>
