@@ -1,267 +1,63 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { useApp } from '../context/appState';
 import type { Post } from '../mockData';
-import { useApp } from '../context/AppContext';
+import { Heart, MessageCircle, MapPin, Star, ThumbsUp, ThumbsDown, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { CommentSection } from './CommentSection';
-import { Star, MapPin, Heart, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Dialog } from './Dialog';
+import { averageRating, ratingValues } from '../utils/discovery';
+import { errorMessage } from '../utils/errors';
 
-interface PostCardProps {
-  post: Post;
-}
-
-export const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const { toggleLike, setSelectedUser, setActiveTab, currentUser, deletePost, setExpandedPhotoUrl } = useApp();
+export function PostCard({ post }: { post: Post }) {
+  const { currentUser, toggleLike, deletePost, setSelectedUser, setActiveTab, setExpandedPhotoUrl, notify } = useApp();
   const [showComments, setShowComments] = useState(false);
-  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  const handleDelete = () => {
-    setIsDeleteConfirmOpen(true);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [liking, setLiking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const ratings = ratingValues(post);
+  const average = averageRating(ratings).toFixed(1);
+  const date = new Date(post.createdAt);
+  const formattedDate = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  const activeIndex = Math.min(photoIndex, Math.max(0, post.photos.length - 1));
+  const longContent = post.content.length > 350;
+  const content = longContent && !expanded ? post.content.slice(0, 350).trimEnd() + '…' : post.content;
+  const like = async () => {
+    if (liking) return;
+    setLiking(true);
+    try { await toggleLike(post.id); } catch (error) { notify(errorMessage(error), 'error'); } finally { setLiking(false); }
   };
-
-  const handleUserClick = () => {
-    setSelectedUser(post.user);
-    setActiveTab('profile');
+  const remove = async () => {
+    setDeleting(true); setDeleteError('');
+    try { await deletePost(post.id); setConfirmDelete(false); notify('Relato excluído.'); }
+    catch (error) { setDeleteError(errorMessage(error)); }
+    finally { setDeleting(false); }
   };
-
-  const handleLike = () => {
-    setIsLikeAnimating(true);
-    toggleLike(post.id);
-    setTimeout(() => setIsLikeAnimating(false), 500);
-  };
-
-  // Calculate local average rating from author's rating + all comment ratings
-  const ratings = [
-    post.rating,
-    ...post.comments
-      .filter((c) => c.rating !== undefined)
-      .map((c) => c.rating as number),
-  ];
-  
-  const avgRating = (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1);
-  const reviewCount = ratings.length;
-
-  const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  return (
-    <article className="glass-card rounded-3xl p-5 md:p-6 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px]">
-      
-      {/* Header Info */}
-      <div className="flex items-start justify-between mb-4">
-        <button
-          onClick={handleUserClick}
-          className="flex items-center gap-3 hover:opacity-85 text-left transition-opacity group"
-        >
-          <div className="avatar-ring flex-shrink-0">
-            <img
-              src={post.user.avatar}
-              alt={post.user.displayName}
-              className="w-10 h-10 object-cover"
-            />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-sm text-[var(--text-primary)] leading-tight group-hover:text-[var(--clr-primary)] transition-colors">
-              {post.user.displayName}
-            </h3>
-            <p className="text-xs text-[var(--text-muted)]">@{post.user.username}</p>
-          </div>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium text-[var(--text-muted)]">
-            {formatDate(post.createdAt)}
-          </span>
-          {currentUser && currentUser.id === post.user.id && (
-            <button
-              onClick={handleDelete}
-              className="p-1.5 rounded-xl text-[var(--clr-danger)] hover:bg-[var(--clr-danger)]/10 transition-colors"
-              title="Excluir relato"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+  return <article className="post-card">
+    <header className="post-header">
+      <button className="post-author" onClick={() => { setSelectedUser(post.user); setActiveTab('profile'); }}><img src={post.user.avatar} alt="" /><div><strong>{post.user.displayName}</strong><span>@{post.user.username}</span></div></button>
+      <div className="post-meta"><time dateTime={post.createdAt} title={date.toLocaleString('pt-BR')}>{formattedDate}</time>{currentUser?.id === post.user.id && <button className="icon-button" aria-label="Excluir relato" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>}</div>
+    </header>
+    <div className="post-location"><div><MapPin size={16} /><h3>{post.location}</h3></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><Star size={14} fill="currentColor" />{average}</span></div>
+    <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span></div>
+    <p className="post-content">{content}</p>
+    {longContent && <button className="text-button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? 'Ler menos' : 'Continuar lendo'}</button>}
+    {post.photos.length > 0 && <div className="post-photos">
+      <div className="post-photo-frame">
+        <button className="post-photo-open" aria-label={`Ampliar foto ${activeIndex + 1} de ${post.location}`} onClick={() => setExpandedPhotoUrl(post.photos[activeIndex])}><img src={post.photos[activeIndex]} alt={`Foto de ${post.location}`} loading="lazy" /></button>
+        {post.photos.length > 1 && <><span className="photo-counter">{activeIndex + 1} / {post.photos.length}</span><button className="photo-arrow previous" aria-label="Foto anterior" onClick={() => setPhotoIndex((activeIndex + post.photos.length - 1) % post.photos.length)}><ChevronLeft size={21} /></button><button className="photo-arrow next" aria-label="Próxima foto" onClick={() => setPhotoIndex((activeIndex + 1) % post.photos.length)}><ChevronRight size={21} /></button></>}
       </div>
-
-      {/* Location Bar with Crowd-Sourced Ratings */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 mb-4 rounded-2xl bg-[var(--clr-teal)]/5 border border-[var(--clr-teal)]/10">
-        <div className="flex items-center gap-2 text-[var(--clr-teal)] font-bold text-xs">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
-          <span>{post.location}</span>
-        </div>
-
-        {/* Dynamic Ratings Summary */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Average Stars */}
-          <div className="chip chip-amber">
-            <Star className="w-3.5 h-3.5 fill-current" />
-            <span className="font-black">{avgRating}</span>
-          </div>
-
-          {/* Verdict and review count */}
-          <span className="text-[10px] text-[var(--text-muted)] font-semibold">
-            ({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})
-          </span>
-
-          {/* Verdict Pill */}
-          <span className={`chip ${
-            post.verdict === 'Gostei' ? 'chip-success' : 'chip-danger'
-          }`}>
-            {post.verdict === 'Gostei' ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
-            {post.verdict}
-          </span>
-        </div>
-      </div>
-
-      {/* Post Text */}
-      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4 font-normal whitespace-pre-line">
-        {post.content}
-      </p>
-
-      {/* Photo Showcase */}
-      {post.photos && post.photos.length > 0 && (
-        <div className="mb-4 space-y-2.5">
-          <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-inner border border-[var(--border-subtle)] group cursor-zoom-in">
-            <img
-              src={post.photos[activePhotoIdx]}
-              alt={`Trip photo ${activePhotoIdx + 1}`}
-              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.03]"
-              onClick={() => setExpandedPhotoUrl(post.photos[activePhotoIdx])}
-            />
-            {/* Photo overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-            
-            {/* Multiple Photos indicator/dots */}
-            {post.photos.length > 1 && (
-              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-[2]">
-                {post.photos.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(idx); }}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      idx === activePhotoIdx ? 'bg-white w-5 shadow-md' : 'bg-white/50 w-1.5 hover:bg-white/80'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Small Thumbnails strip */}
-          {post.photos.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {post.photos.map((photo, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActivePhotoIdx(idx)}
-                  className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
-                    idx === activePhotoIdx 
-                      ? 'border-[var(--clr-primary)] scale-95 shadow-md' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <img src={photo} alt="thumbnail" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Actions Row */}
-      <div className="flex items-center justify-between border-t border-[var(--border-subtle)] pt-3 text-[var(--text-muted)]">
-        <div className="flex items-center gap-6">
-          {/* Like Button */}
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-2 transition-colors group ${
-              post.isLiked ? 'text-[var(--clr-danger)] font-bold' : 'hover:text-[var(--clr-danger)]'
-            }`}
-          >
-            <Heart
-              className={`w-4 h-4 transition-transform ${
-                isLikeAnimating ? 'animate-heartbeat' : ''
-              } ${
-                post.isLiked ? 'fill-[var(--clr-danger)] text-[var(--clr-danger)]' : 'group-hover:scale-110'
-              }`}
-            />
-            <span className="text-xs">{post.likesCount}</span>
-          </button>
-
-          {/* Toggle Comments Button */}
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className={`flex items-center gap-2 transition-colors ${
-              showComments ? 'text-[var(--clr-primary)] font-bold' : 'hover:text-[var(--clr-primary)]'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span className="text-xs">{post.comments.length}</span>
-          </button>
-        </div>
-
-        {/* Details Dropdown Indicator */}
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="text-xs flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-        >
-          <span>{showComments ? 'Ocultar Resenhas' : 'Ver Resenhas'}</span>
-          {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-      </div>
-
-      {/* Expandable comments thread */}
-      {showComments && (
-        <div className="animate-slide-up">
-          <CommentSection post={post} />
-        </div>
-      )}
-
- 
-
-      {/* Custom Delete Confirmation Modal */}
-      {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="glass-card-elevated max-w-sm w-full p-6 rounded-3xl border border-[var(--border-subtle)] space-y-6 text-center shadow-2xl animate-scale-in">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-[var(--clr-danger)]/10 border border-[var(--clr-danger)]/20 flex items-center justify-center text-[var(--clr-danger)]">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-lg font-black text-[var(--text-primary)]">Excluir Relato</h3>
-              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                Tem certeza de que deseja excluir este relato? Esta ação não pode ser desfeita e removerá permanentemente fotos, resenhas e comentários associados.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 px-4 py-3 rounded-2xl text-xs font-bold text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors focus:outline-none"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  setIsDeleteConfirmOpen(false);
-                  await deletePost(post.id);
-                }}
-                className="flex-1 px-4 py-3 rounded-2xl text-xs font-bold bg-[var(--clr-danger)] text-white hover:opacity-90 shadow-md shadow-[var(--clr-danger)]/20 transition-all focus:outline-none"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </article>
-  );
-};
+      {post.photos.length > 1 && <div className="photo-thumbnails">{post.photos.map((photo,index) => <button key={photo + index} aria-label={`Ver foto ${index + 1}`} aria-pressed={activeIndex === index} onClick={() => setPhotoIndex(index)}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
+    </div>}
+    <footer className="post-actions">
+      <button disabled={liking} aria-pressed={!!post.isLiked} aria-label={post.isLiked ? 'Descurtir relato' : 'Curtir relato'} className={post.isLiked ? 'liked' : ''} onClick={() => void like()}><Heart size={19} fill={post.isLiked ? 'currentColor' : 'none'} /><span>{post.likesCount}</span></button>
+      <button aria-expanded={showComments} aria-label="Comentários do relato" onClick={() => setShowComments(!showComments)}><MessageCircle size={19} /><span>{post.comments.length}</span></button>
+      <button className="post-reviews" aria-expanded={showComments} onClick={() => setShowComments(!showComments)}>{showComments ? 'Fechar conversa' : 'Ver conversa'}{showComments ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
+    </footer>
+    {showComments && <CommentSection post={post} />}
+    <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Excluir este relato?" busy={deleting} className="confirm-dialog">
+      <div className="dialog-content"><p>O relato e seus comentários serão removidos. Esta ação não pode ser desfeita.</p>{deleteError && <p className="form-error" role="alert">{deleteError}</p>}<div className="dialog-actions"><button className="btn-secondary" disabled={deleting} onClick={() => setConfirmDelete(false)}>Cancelar</button><button className="btn-danger" disabled={deleting} onClick={() => void remove()}>{deleting ? 'Excluindo…' : 'Excluir relato'}</button></div></div>
+    </Dialog>
+  </article>;
+}

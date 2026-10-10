@@ -26,7 +26,12 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Validate Application
+        run: |
+          npm run lint
+          npm test
 
       - name: Build Web Application
         run: npm run build
@@ -84,3 +89,15 @@ jobs:
         with:
           name: trip-app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish APK on GitHub Releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: apk-${{ github.run_number }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Trip.apk
+          gh release create "$RELEASE_TAG" Trip.apk \
+            --target "$GITHUB_SHA" \
+            --title "Trip 1.1.0 · Build ${{ github.run_number }}" \
+            --notes "APK Android assinado com o novo design, ícone e melhorias de funcionamento. Baixe Trip.apk nos arquivos desta versão."

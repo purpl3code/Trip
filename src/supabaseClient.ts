@@ -17,8 +17,10 @@ const customStorage = {
     const keepLogged = localStorage.getItem('trip_keep_logged') !== 'false';
     if (keepLogged) {
       localStorage.setItem(key, value);
+      sessionStorage.removeItem(key);
     } else {
       sessionStorage.setItem(key, value);
+      localStorage.removeItem(key);
     }
   },
   removeItem(key: string): void {

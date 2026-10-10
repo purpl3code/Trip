@@ -1,417 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
-import { X, Star, MapPin, ThumbsUp, ThumbsDown, Image as ImageIcon, Upload, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { useApp } from '../context/appState';
+import { Star, ThumbsUp, ThumbsDown, ImagePlus, X, Crop, Send, LoaderCircle } from 'lucide-react';
+import { Dialog } from './Dialog';
+import { useObjectUrls } from '../hooks/useObjectUrls';
+import { errorMessage } from '../utils/errors';
 
-interface NewPostModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose }) => {
-  const { addPost } = useApp();
+export function NewPostModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { addPost, notify, setActiveTab } = useApp();
   const [content, setContent] = useState('');
   const [location, setLocation] = useState('');
   const [rating, setRating] = useState(5);
   const [verdict, setVerdict] = useState<'Gostei' | 'Não gostei'>('Gostei');
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // States for Image Cropping
-  const [croppingIdx, setCroppingIdx] = useState<number | null>(null);
-  const [cropOffset, setCropOffset] = useState(0.5);
-  const [imgIsLandscape, setImgIsLandscape] = useState(true);
-  const [croppingImgUrl, setCroppingImgUrl] = useState<string | null>(null);
-
-  const croppingFile = croppingIdx !== null ? photoFiles[croppingIdx] : null;
-
-  useEffect(() => {
-    if (croppingFile) {
-      const url = URL.createObjectURL(croppingFile);
-      setCroppingImgUrl(url);
-      setCropOffset(0.5);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setCroppingImgUrl(null);
-    }
-  }, [croppingFile]);
-
-  useEffect(() => {
-    if (croppingImgUrl) {
-      const img = new Image();
-      img.src = croppingImgUrl;
-      img.onload = () => {
-        setImgIsLandscape(img.width > img.height);
-      };
-    }
-  }, [croppingImgUrl]);
-
-  const applyCrop = () => {
-    if (croppingIdx === null || !croppingFile) return;
-
-    const img = new Image();
-    img.src = URL.createObjectURL(croppingFile);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const size = Math.min(img.width, img.height);
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      let sx = 0;
-      let sy = 0;
-
-      if (img.width > img.height) {
-        const maxOffset = img.width - img.height;
-        sx = maxOffset * cropOffset;
-      } else {
-        const maxOffset = img.height - img.width;
-        sy = maxOffset * cropOffset;
-      }
-
-      ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const croppedFile = new File([blob], croppingFile.name, {
-            type: 'image/png',
-            lastModified: Date.now(),
-          });
-          setPhotoFiles((prev) => {
-            const updated = [...prev];
-            updated[croppingIdx] = croppedFile;
-            return updated;
-          });
-          setCroppingIdx(null);
-        }
-      }, 'image/png');
-    };
+  const [files, setFiles] = useState<File[]>([]);
+  const urls = useObjectUrls(files);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const [cropOffset, setCropOffset] = useState(.5);
+  const [landscape, setLandscape] = useState(true);
+  const [cropping, setCropping] = useState(false);
+  const busy = submitting || cropping;
+  const selectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (files.length + incoming.length > 8) { setError('Adicione até 8 fotos por relato.'); return; }
+    if (incoming.some(file => !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024)) { setError('Use fotos JPG, PNG ou WebP de até 10 MB cada.'); return; }
+    setError(''); setFiles(previous => [...previous, ...incoming]);
   };
-
-  // Lock background scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim() || !location.trim()) return;
-
-    setIsSubmitting(true);
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (submitting || !content.trim() || !location.trim()) return;
+    setSubmitting(true); setError('');
     try {
-      await addPost(content, location, rating, verdict, [], photoFiles);
-      
-      // Reset form
-      setContent('');
-      setLocation('');
-      setRating(5);
-      setVerdict('Gostei');
-      setPhotoFiles([]);
-      onClose();
-    } catch (error) {
-      console.error('Error submitting post:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+      await addPost(content.trim(), location.trim(), rating, verdict, [], files);
+      setContent(''); setLocation(''); setRating(5); setVerdict('Gostei'); setFiles([]);
+      setActiveTab('feed'); onClose(); notify('Sua descoberta foi publicada!');
+    } catch (err) { setError(errorMessage(err)); } finally { setSubmitting(false); }
   };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setPhotoFiles((prev) => [...prev, ...filesArray]);
-    }
+  const crop = async () => {
+    if (cropIndex === null || !urls[cropIndex]) return;
+    setCropping(true);
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve,reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error('Não foi possível abrir a foto.')); image.src = urls[cropIndex]; });
+      const canvas = document.createElement('canvas');
+      const size = Math.min(image.width,image.height);
+      canvas.width = size; canvas.height = size;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Não foi possível recortar a foto.');
+      context.drawImage(image, (image.width-size)*cropOffset, (image.height-size)*cropOffset, size,size,0,0,size,size);
+      const blob = await new Promise<Blob>((resolve,reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Não foi possível salvar o corte.')), 'image/png'));
+      const index = cropIndex;
+      setFiles(previous => previous.map((file,i) => i === index ? new File([blob], 'foto-recortada.png', { type:'image/png' }) : file));
+      setCropIndex(null);
+    } catch (err) { setError(errorMessage(err)); } finally { setCropping(false); }
   };
-
-  const handleRemoveFile = (indexToRemove: number) => {
-    setPhotoFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in">
-      {/* Modal Card */}
-      <div className="glass-panel w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-modal flex flex-col max-h-[90vh]">
-        
-        {croppingIdx !== null ? (
-          /* Cropper View */
-          <div className="flex flex-col h-full overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">Recortar Imagem</h2>
-              <button
-                type="button"
-                onClick={() => setCroppingIdx(null)}
-                className="p-1.5 rounded-xl hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 p-6 flex flex-col justify-center items-center space-y-6 overflow-y-auto">
-              <div 
-                className="w-64 h-64 rounded-2xl border-2 border-[var(--clr-primary)] shadow-2xl overflow-hidden relative"
-                style={{
-                  backgroundImage: `url(${croppingImgUrl})`,
-                  backgroundPosition: imgIsLandscape ? `${cropOffset * 100}% center` : `center ${cropOffset * 100}%`,
-                  backgroundSize: imgIsLandscape ? 'auto 100%' : '100% auto',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundColor: 'var(--bg-subtle)'
-                }}
-              />
-
-              <div className="w-full max-w-xs space-y-2">
-                <div className="flex justify-between text-xs font-bold text-[var(--text-muted)]">
-                  <span>Ajustar área de corte (1:1)</span>
-                  <span>{(cropOffset * 100).toFixed(0)}%</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.01" 
-                  value={cropOffset} 
-                  onChange={(e) => setCropOffset(parseFloat(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--clr-primary)]"
-                  style={{ background: `linear-gradient(to right, var(--clr-primary) ${cropOffset * 100}%, var(--bg-subtle) ${cropOffset * 100}%)` }}
-                />
-              </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex gap-3 bg-[var(--bg-subtle)]/50">
-              <button
-                type="button"
-                onClick={() => setCroppingIdx(null)}
-                className="flex-1 py-3 btn-secondary rounded-2xl text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={applyCrop}
-                className="flex-1 py-3 btn-primary rounded-2xl text-sm"
-              >
-                Confirmar Corte
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Normal Post Form View */
-          <>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2.5">
-                <div className="gradient-primary p-1.5 rounded-xl">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">Relatar Nova Experiência</h2>
-              </div>
-              <button
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="p-1.5 rounded-xl hover:bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all disabled:opacity-50"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content Form */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Location */}
-              <div className="space-y-2 animate-slide-up stagger-1">
-                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[var(--clr-teal)]" />
-                  Onde você esteve?
-                </label>
-                <input
-                  type="text"
-                  required
-                  disabled={isSubmitting}
-                  placeholder="Nome do local ou estabelecimento"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)] disabled:opacity-50"
-                />
-              </div>
-
-              {/* Rating & Verdict */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up stagger-2">
-                {/* Rating Stars */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Sua Avaliação (1 a 5 estrelas)
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => setRating(star)}
-                        className="p-1 transition-all active:scale-90 disabled:opacity-50 hover:scale-110"
-                      >
-                        <Star
-                          className={`w-6 h-6 transition-colors duration-200 ${
-                            star <= rating
-                              ? 'fill-[var(--clr-primary)] text-[var(--clr-primary)]'
-                              : 'text-[var(--text-muted)] hover:text-[var(--clr-primary-light)]'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Verdict */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Veredito Rápido
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => setVerdict('Gostei')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
-                        verdict === 'Gostei'
-                          ? 'bg-[var(--clr-success)]/15 border-[var(--clr-success)] text-[var(--clr-success)] shadow-sm'
-                          : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
-                      }`}
-                    >
-                      <ThumbsUp className="w-4 h-4" />
-                      Gostei
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => setVerdict('Não gostei')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all duration-300 ${
-                        verdict === 'Não gostei'
-                          ? 'bg-[var(--clr-danger)]/15 border-[var(--clr-danger)] text-[var(--clr-danger)] shadow-sm'
-                          : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
-                      }`}
-                    >
-                      <ThumbsDown className="w-4 h-4" />
-                      Não Gostei
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description Content */}
-              <div className="space-y-2 animate-slide-up stagger-3">
-                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  O que achou da experiência?
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  disabled={isSubmitting}
-                  placeholder="Como foi a sua experiência?"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)] resize-none disabled:opacity-50"
-                />
-              </div>
-
-              {/* Photo Attachments */}
-              <div className="space-y-3 animate-slide-up stagger-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-[var(--clr-primary)]" />
-                    Adicionar Fotos ({photoFiles.length})
-                  </label>
-                  
-                  <div className="flex items-center gap-3">
-                    {/* Upload Image File Button */}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      disabled={isSubmitting}
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="text-xs text-[var(--clr-primary)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Upload
-                    </label>
-                  </div>
-                </div>
-
-                {/* Display Attached Photos List (Files only) */}
-                {photoFiles.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto py-1 no-scrollbar">
-                    {/* Render Custom Files */}
-                    {photoFiles.map((file, idx) => {
-                      const fileUrl = URL.createObjectURL(file);
-                      return (
-                        <div key={`file-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[var(--border-subtle)] flex-shrink-0 group">
-                          <img src={fileUrl} alt="File attached preview" className="w-full h-full object-cover" />
-                          
-                          {/* Crop Button */}
-                          <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => setCroppingIdx(idx)}
-                            className="absolute bottom-1 left-1 bg-black/70 hover:bg-[var(--clr-primary)] text-white rounded-lg px-1.5 py-0.5 text-[10px] font-bold transition-colors"
-                          >
-                            Cortar
-                          </button>
-
-                          {/* Remove Button */}
-                          <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => handleRemoveFile(idx)}
-                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 hover:bg-[var(--clr-danger)] transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Form Actions */}
-              <div className="pt-2 animate-slide-up stagger-5">
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !content.trim() || !location.trim()}
-                  className="w-full py-3.5 btn-primary rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                      <span>Enviando relato...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Publicar Relato</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
+  return <Dialog open={isOpen} onClose={() => cropIndex !== null ? setCropIndex(null) : onClose()} title={cropIndex !== null ? 'Encontre o melhor enquadramento' : 'Uma nova descoberta'} busy={busy}>
+    {cropIndex !== null ? <div className="dialog-content crop-form"><p className="muted">Ajuste a posição para recortar sua foto em um quadrado.</p><div className="crop-preview" style={{ backgroundImage: `url(${urls[cropIndex]})`, backgroundSize: landscape ? 'auto 100%' : '100% auto', backgroundPosition: landscape ? `${cropOffset*100}% center` : `center ${cropOffset*100}%` }} /><label className="field-label" htmlFor="crop-offset">Posição da foto</label><input id="crop-offset" type="range" min="0" max="1" step=".01" value={cropOffset} disabled={cropping} onChange={event => setCropOffset(Number(event.target.value))} /><div className="dialog-actions"><button className="btn-secondary" disabled={cropping} onClick={() => setCropIndex(null)}>Voltar</button><button className="btn-primary" disabled={cropping} onClick={() => void crop()}>{cropping ? 'Recortando…' : 'Aplicar corte'}</button></div>{error && <p className="form-error" role="alert">{error}</p>}</div> :
+    <form className="dialog-content trip-form" onSubmit={submit}>
+      <p className="form-intro">Um lugar, um sabor, uma experiência. Conte do seu jeito.</p>
+      <div className="form-field"><label htmlFor="post-location">Onde você esteve?</label><input id="post-location" required maxLength={120} placeholder="Nome do lugar ou estabelecimento" value={location} disabled={busy} onChange={event => setLocation(event.target.value)} /></div>
+      <fieldset className="rating-field"><legend>Sua avaliação</legend><div className="star-picker">{[1,2,3,4,5].map(star => <button type="button" disabled={busy} key={star} aria-label={`${star} ${star === 1 ? 'estrela' : 'estrelas'}`} aria-pressed={rating === star} onClick={() => setRating(star)}><Star size={28} fill={star <= rating ? 'currentColor' : 'none'} /></button>)}<span>{rating}/5</span></div></fieldset>
+      <div className="verdict-picker"><button type="button" disabled={busy} aria-pressed={verdict === 'Gostei'} onClick={() => setVerdict('Gostei')}><ThumbsUp size={17} /> Gostei</button><button type="button" disabled={busy} aria-pressed={verdict === 'Não gostei'} onClick={() => setVerdict('Não gostei')}><ThumbsDown size={17} /> Não gostei</button></div>
+      <div className="form-field"><label htmlFor="post-content">Como foi a experiência?</label><textarea id="post-content" required maxLength={5000} rows={4} placeholder="O que fez esse momento valer a pena? O que você recomendaria?" value={content} disabled={busy} onChange={event => setContent(event.target.value)} /><span className="field-hint">{content.length}/5000 caracteres</span></div>
+      <div className="photo-upload-heading"><div><strong>Fotos da descoberta</strong><p>Até 8 fotos · JPG, PNG ou WebP · 10 MB cada</p></div><label className="upload-button"><ImagePlus size={18} /><span>Adicionar</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} aria-label="Adicionar fotos ao relato" onChange={selectFiles} /></label></div>
+      {files.length > 0 && <div className="upload-previews">{files.map((file,index) => <div key={index}><img src={urls[index]} alt={`Prévia da foto ${index+1}: ${file.name}`} onLoad={event => { if (cropIndex === index) setLandscape(event.currentTarget.naturalWidth >= event.currentTarget.naturalHeight); }} /><button type="button" className="preview-remove" disabled={busy} aria-label={`Remover foto ${index+1}`} onClick={() => setFiles(previous => previous.filter((_,i) => i !== index))}><X size={16} /></button><button type="button" className="preview-crop" disabled={busy} aria-label={`Recortar foto ${index+1}`} onClick={() => { const image = new Image(); image.onload = () => setLandscape(image.width >= image.height); image.src = urls[index]; setCropIndex(index); setCropOffset(.5); }}><Crop size={13} /> Recortar</button></div>)}</div>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <div className="form-submit"><span>Seu rascunho fica aqui ao fechar.</span><button type="submit" className="btn-primary" disabled={busy || !content.trim() || !location.trim()}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{submitting ? 'Publicando…' : 'Publicar relato'}</button></div>
+    </form>}
+  </Dialog>;
+}

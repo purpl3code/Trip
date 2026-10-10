@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useApp } from './context/AppContext';
+import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { useApp } from './context/appState';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { PostCard } from './components/PostCard';
@@ -8,189 +9,60 @@ import { NewPostModal } from './components/NewPostModal';
 import { EditProfileModal } from './components/EditProfileModal';
 import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
-import { Compass, Users, Sparkles, MapPin, X } from 'lucide-react';
+import { Brand } from './components/Brand';
+import { Dialog } from './components/Dialog';
+import { ArrowRight, Compass, RefreshCw, Plus, MapPin, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, selectedUser, currentUser, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl } = useApp();
+  const { posts, activeTab, currentUser, selectedUser, setSelectedUser, setActiveTab, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl, notice, dismissNotice, dataError, refreshData, isRefreshing } = useApp();
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [feedType, setFeedType] = useState<'global' | 'following'>('global');
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [activeTab, selectedUser?.id]);
+  useEffect(() => { if (!currentUser) setIsNewPostOpen(false); }, [currentUser]);
 
-  // Guard clause: show a loading screen during session recovery to prevent login view flash
-  if (isSessionLoading) {
-    return (
-      <div className="min-h-screen mesh-bg flex flex-col items-center justify-center gap-5">
-        {/* Logo pulse */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-2xl animate-glow-pulse" />
-          <div className="relative gradient-primary p-4 rounded-2xl shadow-lg">
-            <Compass className="w-10 h-10 text-white animate-spin-slow" />
-          </div>
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-xl font-black tracking-widest gradient-primary-text">
-            TRIP
-          </span>
-          <div className="loading-dots">
-            <span /><span /><span />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const feedback = notice && <div className={`trip-toast ${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.kind === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}<span>{notice.message}</span><button className="icon-button" aria-label="Dispensar mensagem" onClick={dismissNotice}><X size={18} /></button></div>;
+  const retry = dataError && <div className="data-error" role="alert"><AlertCircle size={20} /><span>{dataError}</span><button onClick={() => void refreshData()} disabled={isRefreshing}>{isRefreshing ? 'Atualizando…' : 'Tentar novamente'}</button></div>;
+  if (isSessionLoading) return <div className="session-loading"><Brand /><span className="loading-dots"><span /><span /><span /></span><p>Preparando seu diário…</p></div>;
+  if (!currentUser) return <>{retry}<AuthView />{feedback}</>;
 
-  // Guard clause: enforce authentication
-  if (!currentUser) {
-    return <AuthView />;
-  }
-
-  // Filter posts based on active feed filter
-  const displayedPosts = posts.filter((post) => {
-    if (feedType === 'global') return true;
-    // 'following' feed: posts by users Michael follows + Michael's own posts
-    return post.user.isFollowing || post.user.id === currentUser.id;
-  });
-
+  const displayedPosts = feedType === 'global' ? posts : posts.filter(post => post.user.id === currentUser.id || post.user.isFollowing);
+  const ownPosts = posts.filter(post => post.user.id === currentUser.id);
+  const locations = new Set(ownPosts.map(post => post.location.trim().toLowerCase())).size;
+  const openProfile = () => { setSelectedUser(currentUser); setActiveTab('profile'); };
   return (
-    <div className="min-h-screen mesh-bg flex transition-colors duration-500">
-
-      {/* Sidebar for Desktop */}
+    <div className={`app-shell ${Capacitor.isNativePlatform() ? 'native-app' : ''}`}>
+      <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
       <Sidebar onOpenNewPost={() => setIsNewPostOpen(true)} />
-
-      {/* Main Layout Area */}
-      <div className="flex-1 md:ml-72 flex flex-col min-h-screen relative z-10 min-w-0 overflow-x-hidden">
-        
-        {/* Top Header Bar */}
-        <header className="sticky top-0 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-6 pb-3 pt-[max(env(safe-area-inset-top,48px),48px)] flex items-center justify-between z-40 transition-colors duration-300 md:pt-4 md:h-16 shadow-sm">
-          {/* Mobile Logo */}
-          <div className="flex items-center gap-2.5 md:hidden">
-            <div className="gradient-primary p-1.5 rounded-xl shadow-md">
-              <Compass className="w-5 h-5 text-white animate-spin-slow" />
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-black tracking-widest gradient-primary-text">
-                TRIP
-              </span>
-            </div>
-          </div>
-
-          {/* Desktop welcome */}
-          <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
-            <Sparkles className="w-4 h-4 text-[var(--clr-primary)]" />
-            <span>Bem-vindo de volta ao seu diário de bordo!</span>
-          </div>
-
+      <div className="app-body">
+        <header className="app-header">
+          <Brand />
+          <span className="header-context">{activeTab === 'feed' ? 'Seu diário de descobertas' : activeTab === 'search' ? 'Encontre sua próxima parada' : 'Histórias que ficam'}</span>
+          <button className="header-avatar" onClick={openProfile} aria-label="Abrir meu perfil"><img src={currentUser.avatar} alt="" /></button>
         </header>
-
-        {/* Content Container */}
-        <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 pb-24 md:pb-8">
-          
-          {/* Feed View */}
-          {activeTab === 'feed' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Feed Title & Toggles */}
-              <div className="flex items-center justify-between animate-slide-up">
-                <h2 className="text-xl font-black tracking-tight text-[var(--text-primary)]">Linha do Tempo</h2>
-                
-                {/* Explorer vs Following Tab */}
-                <div className="flex p-1 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
-                  <button
-                    onClick={() => setFeedType('global')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
-                      feedType === 'global'
-                        ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Explorar</span>
-                  </button>
-                  <button
-                    onClick={() => setFeedType('following')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
-                      feedType === 'following'
-                        ? 'bg-[var(--bg-elevated)] text-[var(--clr-primary)] shadow-sm'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Seguindo</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Feed Posts List */}
-              {displayedPosts.length > 0 ? (
-                <div className="space-y-5">
-                  {displayedPosts.map((post, idx) => (
-                    <div key={post.id} className="animate-slide-up" style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}>
-                      <PostCard post={post} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="glass-card rounded-3xl p-12 text-center space-y-3 animate-scale-in">
-                  <MapPin className="w-10 h-10 mx-auto text-[var(--clr-primary)]/40" />
-                  <h3 className="font-extrabold text-sm text-[var(--text-primary)]">Nenhum relato por aqui</h3>
-                  <p className="text-xs max-w-sm mx-auto font-normal text-[var(--text-muted)]">
-                    {feedType === 'following'
-                      ? 'As pessoas que você segue ainda não postaram nada. Alterne para a aba "Explorar" para descobrir novos destinos!'
-                      : 'Nenhuma postagem encontrada.'}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Search View */}
-          {activeTab === 'search' && (
-            <div className="animate-fade-in">
-              <SearchView />
-            </div>
-          )}
-
-          {/* Profile View */}
-          {activeTab === 'profile' && (
-            <div className="space-y-6 animate-fade-in">
-              {selectedUser && <UserProfile user={selectedUser} />}
-            </div>
-          )}
-
+        <main id="main-content" className="app-content">
+          {retry}
+          {activeTab === 'feed' && <>
+            <section className="feed-welcome">
+              <div className="welcome-copy"><span className="eyebrow">SEU DIÁRIO DE BORDO</span><h1>Que história vamos<br />guardar hoje?</h1><p>Olá, {currentUser.displayName.split(' ')[0]}. Um novo lugar, um sabor ou um momento que vale compartilhar.</p><button className="btn-primary welcome-button" onClick={() => setIsNewPostOpen(true)}><Plus size={18} /> Criar um relato <ArrowRight size={16} /></button></div>
+              <div className="welcome-decoration" aria-hidden="true"><Compass size={110} strokeWidth={1} /><span className="orbit-dot" /><span className="orbit-dot second" /></div>
+              <div className="welcome-stats"><span><strong>{ownPosts.length}</strong> relatos</span><span><strong>{locations}</strong> lugares descobertos</span></div>
+            </section>
+            <button className="composer-shortcut" onClick={() => setIsNewPostOpen(true)}><img src={currentUser.avatar} alt="" /><span>Qual foi sua última descoberta?</span><Plus size={20} /></button>
+            <div className="section-heading"><div><h2>Seu próximo destino começa aqui</h2><p>Experiências reais de quem esteve lá.</p></div><button className="icon-button" aria-label="Atualizar relatos" onClick={() => void refreshData()} disabled={isRefreshing}><RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} /></button></div>
+            <div className="segmented-control feed-filter" aria-label="Filtrar relatos"><button aria-pressed={feedType === 'global'} onClick={() => setFeedType('global')}>Explorar</button><button aria-pressed={feedType === 'following'} onClick={() => setFeedType('following')}>Seguindo</button></div>
+            <div className="post-list">{displayedPosts.map(post => <PostCard key={post.id} post={post} />)}</div>
+            {!displayedPosts.length && <div className="empty-state"><MapPin size={32} /><h3>{feedType === 'following' ? 'Seu círculo começa com uma descoberta' : 'O primeiro relato pode ser seu'}</h3><p>{feedType === 'following' ? 'Encontre pessoas na busca e siga os diários que combinam com você.' : 'Conte uma experiência e ajude outras pessoas a escolher sua próxima parada.'}</p><button className="btn-primary" onClick={() => feedType === 'following' ? setActiveTab('search') : setIsNewPostOpen(true)}>{feedType === 'following' ? 'Encontrar pessoas' : 'Criar meu primeiro relato'}<ArrowRight size={16} /></button></div>}
+          </>}
+          {activeTab === 'search' && <SearchView />}
+          {activeTab === 'profile' && selectedUser && <UserProfile key={selectedUser.id} user={selectedUser} onNewPost={() => setIsNewPostOpen(true)} />}
         </main>
       </div>
-
-      {/* Bottom Nav for Mobile */}
       <BottomNav onOpenNewPost={() => setIsNewPostOpen(true)} />
-
-      {/* New Post Dialog Modal */}
       <NewPostModal isOpen={isNewPostOpen} onClose={() => setIsNewPostOpen(false)} />
-
-      {/* Edit Profile Dialog Modal */}
       <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
-
-      {/* Global Fullscreen Lightbox Zoom Modal */}
-      {expandedPhotoUrl && (
-        <div 
-          className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[9999] flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
-          onClick={() => setExpandedPhotoUrl(null)}
-        >
-          <button 
-            className="absolute top-[max(env(safe-area-inset-top),1.5rem)] right-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10 focus:outline-none"
-            onClick={() => setExpandedPhotoUrl(null)}
-            title="Fechar foto"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          <img
-            src={expandedPhotoUrl}
-            alt="Foto expandida em tela cheia"
-            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+      <Dialog open={!!expandedPhotoUrl} onClose={() => setExpandedPhotoUrl(null)} title="Foto do relato" className="photo-dialog">{expandedPhotoUrl && <img src={expandedPhotoUrl} alt="Foto do relato ampliada" />}</Dialog>
+      {feedback}
     </div>
   );
 }
-
 export default App;

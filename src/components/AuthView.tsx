@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { Compass, Mail, Lock, User, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
+import { useApp } from '../context/appState';
+import { Compass, Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const AuthView: React.FC = () => {
-  const { authError, isAuthLoading, handleSignIn, handleSignUp } = useApp();
+  const { authError, authMessage, clearAuthFeedback, isAuthLoading, handleSignIn, handleSignUp } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -24,56 +25,45 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen mesh-bg flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
-      {/* Animated mesh orbs */}
-      <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--clr-primary)]/8 blur-[100px] pointer-events-none animate-float" />
-      <div className="absolute bottom-[-15%] right-[-10%] w-[45%] h-[45%] rounded-full bg-[var(--clr-teal)]/6 blur-[100px] pointer-events-none animate-float" style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-[30%] right-[15%] w-[30%] h-[30%] rounded-full bg-[var(--clr-coral)]/5 blur-[80px] pointer-events-none animate-float" style={{ animationDelay: '3s' }} />
-
+    <main className="auth-page">
       {/* Main Card */}
-      <div className="glass-panel w-full max-w-md rounded-3xl p-7 md:p-9 relative z-10 animate-modal">
+      <section className="auth-card" aria-labelledby="auth-heading">
         
-        {/* Gradient border accent */}
-        <div className="absolute inset-0 rounded-3xl gradient-border pointer-events-none" />
-
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-8 animate-slide-up">
-          <div className="relative mb-4">
-            <div className="absolute inset-0 rounded-2xl animate-glow-pulse" />
-            <div className="relative gradient-primary p-3.5 rounded-2xl shadow-lg">
-              <Compass className="w-8 h-8 text-white animate-spin-slow" />
-            </div>
+        <header className="auth-header">
+          <div className="auth-brand">
+            <span className="auth-brand-icon"><Compass size={26} aria-hidden="true" /></span>
+            <span className="auth-wordmark">TRIP</span>
           </div>
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-3xl font-black tracking-widest gradient-primary-text">
-              TRIP
-            </h1>
-          </div>
-          <p className="text-xs text-[var(--text-muted)] font-semibold tracking-wider uppercase mt-1.5">
-            Diário Social de Viagens & Comidas
-          </p>
-        </div>
+          <p className="auth-eyebrow">Viagens, sabores e boas histórias.</p>
+          <h1 id="auth-heading">{isSignUp ? 'Sua história começa aqui.' : 'Bem-vindo de volta.'}</h1>
+          <p className="auth-description">{isSignUp ? 'Crie seu diário e compartilhe suas descobertas.' : 'Entre para continuar seu diário de descobertas.'}</p>
+        </header>
 
         {/* Auth Error Banner */}
         {authError && (
-          <div className="p-3.5 mb-5 rounded-2xl bg-[var(--clr-danger)]/10 border border-[var(--clr-danger)]/20 text-xs text-[var(--clr-danger)] font-bold flex items-center gap-2 animate-slide-down">
+          <div role="alert" className="auth-error">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{authError}</span>
           </div>
         )}
 
         {/* Input Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {authMessage && <div className="auth-message" role="status">{authMessage}</div>}
+        <form onSubmit={handleSubmit} className="auth-form" aria-busy={isAuthLoading}>
           {/* Sign Up Fields */}
           {isSignUp && (
             <>
               {/* Display Name */}
               <div className="space-y-1.5 animate-slide-up stagger-1">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="auth-name" className="auth-label">
                   <User className="w-3 h-3 text-[var(--clr-primary)]" />
-                  Nome de Exibição
+                  Nome de exibição
                 </label>
                 <input
+                  id="auth-name"
+                  name="name"
+                  autoComplete="name"
                   type="text"
                   required
                   placeholder="Seu nome completo"
@@ -85,11 +75,19 @@ export const AuthView: React.FC = () => {
 
               {/* Username */}
               <div className="space-y-1.5 animate-slide-up stagger-2">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="auth-username" className="auth-label">
                   <User className="w-3 h-3 text-[var(--clr-primary)]" />
-                  Nome de Usuário (@handle)
+                  Nome de usuário
                 </label>
                 <input
+                  id="auth-username"
+                  name="username"
+                  pattern="[a-z0-9_]{3,30}"
+                  title="Use de 3 a 30 letras minúsculas, números ou sublinhados."
+                  maxLength={30}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   type="text"
                   required
                   placeholder="Nome de usuário desejado"
@@ -101,11 +99,13 @@ export const AuthView: React.FC = () => {
 
               {/* Bio */}
               <div className="space-y-1.5 animate-slide-up stagger-3">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="auth-bio" className="auth-label">
                   <Sparkles className="w-3 h-3 text-[var(--clr-primary)]" />
                   Bio curta (opcional)
                 </label>
                 <input
+                  id="auth-bio"
+                  name="bio"
                   type="text"
                   placeholder="Fale um pouco sobre você..."
                   value={bio}
@@ -118,14 +118,19 @@ export const AuthView: React.FC = () => {
 
           {/* Email */}
           <div className="space-y-1.5 animate-slide-up stagger-4">
-            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+            <label htmlFor="auth-email" className="auth-label">
               <Mail className="w-3 h-3 text-[var(--clr-primary)]" />
               E-mail
             </label>
             <input
+              id="auth-email"
+              name="email"
+              autoComplete={isSignUp ? 'email' : 'username'}
+              autoCapitalize="none"
+              spellCheck={false}
               type="email"
               required
-              placeholder="Digite seu e-mail"
+              placeholder="voce@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
@@ -134,19 +139,27 @@ export const AuthView: React.FC = () => {
 
           {/* Password */}
           <div className="space-y-1.5 animate-slide-up stagger-5">
-            <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+            <label htmlFor="auth-password" className="auth-label">
               <Lock className="w-3 h-3 text-[var(--clr-primary)]" />
               Senha
             </label>
+            <div className="auth-password-wrap">
             <input
-              type="password"
+              id="auth-password"
+              name="password"
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              type={showPassword ? 'text' : 'password'}
               required
-              minLength={6}
-              placeholder="••••••••"
+              minLength={isSignUp ? 6 : undefined}
+              placeholder={isSignUp ? 'Pelo menos 6 caracteres' : 'Digite sua senha'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
             />
+            <button type="button" className="auth-password-toggle" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+            </div>
           </div>
 
           {/* Keep Connected Checkbox */}
@@ -162,8 +175,8 @@ export const AuthView: React.FC = () => {
                 }}
                 className="w-4 h-4 rounded accent-[var(--clr-primary)] cursor-pointer"
               />
-              <label htmlFor="keep-logged" className="text-xs font-semibold text-[var(--text-muted)] cursor-pointer select-none">
-                Mantenha-me conectado
+              <label htmlFor="keep-logged" className="auth-remember">
+                Manter conectado
               </label>
             </div>
           )}
@@ -172,18 +185,18 @@ export const AuthView: React.FC = () => {
           <button
             type="submit"
             disabled={isAuthLoading}
-            className="w-full py-4 mt-2 btn-primary rounded-2xl text-sm flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed animate-slide-up stagger-7"
+            className="auth-submit"
           >
             {isAuthLoading ? (
-              <span className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
+              <><span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin" aria-hidden="true" /><span>{isSignUp ? 'Criando conta…' : 'Entrando…'}</span></>
             ) : isSignUp ? (
               <>
-                <span>Criar Minha Conta</span>
+                <span>Criar conta</span>
                 <Sparkles className="w-4 h-4" />
               </>
             ) : (
               <>
-                <span>Acessar Minha Conta</span>
+                <span>Entrar</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -191,17 +204,20 @@ export const AuthView: React.FC = () => {
         </form>
 
         {/* Toggle Switch */}
-        <div className="mt-6 text-center text-xs text-[var(--text-muted)] animate-slide-up stagger-8">
-          <span>{isSignUp ? 'Já possui uma conta?' : 'Ainda não tem conta?'}</span>{' '}
+        <footer className="auth-footer">
+          <span>{isSignUp ? 'Já tem uma conta?' : 'Novo por aqui?'}</span>{' '}
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            type="button"
+            disabled={isAuthLoading}
+            onClick={() => { clearAuthFeedback(); setIsSignUp(!isSignUp); setShowPassword(false); }}
             className="text-[var(--clr-primary)] hover:underline font-bold transition-colors"
           >
-            {isSignUp ? 'Fazer Login' : 'Cadastre-se'}
+            {isSignUp ? 'Entrar' : 'Criar conta'}
           </button>
-        </div>
+        </footer>
 
-      </div>
-    </div>
+      </section>
+      <p className="auth-caption">Cada descoberta merece uma história.</p>
+    </main>
   );
 };

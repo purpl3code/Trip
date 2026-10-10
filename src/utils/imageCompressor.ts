@@ -8,7 +8,7 @@ export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): 
   return new Promise((resolve, reject) => {
     // Only compress image files
     if (!file.type.startsWith('image/')) {
-      return resolve(file);
+      return reject(new Error('Escolha um arquivo de imagem.'));
     }
 
     const reader = new FileReader();
@@ -41,6 +41,8 @@ export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): 
           return resolve(file); // Fallback to original file if context creation fails
         }
 
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
 
         // Convert canvas back to Blob
@@ -56,12 +58,12 @@ export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): 
           quality
         );
       };
-      img.onerror = (error) => {
-        reject(error);
+      img.onerror = () => {
+        reject(new Error('Não foi possível abrir a imagem. Escolha outra foto.'));
       };
     };
-    reader.onerror = (error) => {
-      reject(error);
+    reader.onerror = () => {
+      reject(new Error('Não foi possível ler a imagem. Escolha outra foto.'));
     };
   });
 };
