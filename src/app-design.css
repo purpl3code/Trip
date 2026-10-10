@@ -1,9 +1,15 @@
 /* Trip's shared application surfaces and controls. */
+:root {
+  --trip-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --trip-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --trip-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --trip-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+}
 .app-shell {
   --bg-base: #f6f7f9; --bg-elevated: #fff; --bg-subtle: #f0f2f5;
   --text-primary: #202936; --text-secondary: #4d5a6c; --text-muted: #667386;
   --border-subtle: #e5e8ed; --border-medium: #d5dce5;
-  --app-accent: #a95309; --app-top-inset: env(safe-area-inset-top, 0px);
+  --app-accent: #a95309; --app-top-inset: var(--trip-safe-top);
   min-height: 100svh; background: var(--bg-base); color: var(--text-primary);
 }
 .dark .app-shell {
@@ -11,7 +17,7 @@
   --text-primary: #f1f4f8; --text-secondary: #bdc7d5; --text-muted: #96a4b8;
   --border-subtle: #293341; --border-medium: #3b485a; --app-accent: #ffbb52;
 }
-.app-shell.native-app { --app-top-inset: max(env(safe-area-inset-top, 48px), 48px); }
+.app-shell { padding-left: var(--trip-safe-left); padding-right: var(--trip-safe-right); }
 button { touch-action: manipulation; }
 .app-shell button, .trip-dialog button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .6; }
@@ -39,7 +45,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .header-context { color: var(--text-muted); font-size: 13px; display: none; }
 .header-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-medium); }
 .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.app-content { width: 100%; max-width: 780px; margin: 0 auto; padding: 24px 18px calc(104px + env(safe-area-inset-bottom)); }
+.app-content { width: 100%; max-width: 780px; margin: 0 auto; padding: 24px 18px calc(104px + var(--trip-safe-bottom)); }
 .app-sidebar { display: none; }
 .skip-link { position: fixed; top: -100px; left: 20px; z-index: 200; padding: 12px; background: #ffad32; color: #221506; border-radius: 8px; }
 .skip-link:focus { top: 12px; }
@@ -102,7 +108,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .post-actions button { min-height: 44px; display: flex; align-items: center; gap: 7px; color: var(--text-muted); font-size: 12px; min-width: 44px; }
 .post-actions button.liked { color: #e55f76; }
 .post-actions .post-reviews { margin-left: auto; }
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-around; align-items: center; padding: 9px 10px calc(9px + env(safe-area-inset-bottom)); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-around; align-items: center; padding: 9px calc(10px + var(--trip-safe-right)) calc(9px + var(--trip-safe-bottom)) calc(10px + var(--trip-safe-left)); }
 .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 48px; min-width: 48px; flex: 1; color: var(--text-muted); font-size: 10px; font-weight: 650; }
 .bottom-nav button[aria-current="page"] { color: var(--app-accent); }
 .bottom-nav button.nav-create { flex: 0 0 58px; background: #ffad32; color: #221506; padding: 8px 10px; border-radius: 15px; margin: 0 8px; }
@@ -199,3 +205,15 @@ button:disabled { cursor: wait; opacity: .6; }
 }
 @media (max-width: 380px) { .app-content { padding-left: 12px; padding-right: 12px; } .post-card { padding: 16px; } .post-header { gap: 7px; } .post-author img { width: 36px; height: 36px; } .post-author strong { font-size: 12px; } .post-meta time { font-size: 10px; } .post-actions { gap: 10px; } .post-actions .post-reviews { font-size: 11px; } .profile-details { padding-left: 16px; padding-right: 16px; } .profile-buttons .btn-secondary { padding: 9px; font-size: 11px; } .profile-stats span { font-size: 10px; } .dialog-backdrop { padding: 10px; } .dialog-content { padding: 18px; } .dialog-header { padding: 14px 18px; } .dialog-header h2 { font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+/* Portals and the login screen also occupy the full native WebView. */
+.auth-page { padding: calc(24px + var(--trip-safe-top)) calc(20px + var(--trip-safe-right)) calc(24px + var(--trip-safe-bottom)) calc(20px + var(--trip-safe-left)); }
+.dialog-backdrop { padding: calc(18px + var(--trip-safe-top)) calc(18px + var(--trip-safe-right)) calc(18px + var(--trip-safe-bottom)) calc(18px + var(--trip-safe-left)); }
+.trip-dialog { max-height: calc(100dvh - 36px - var(--trip-safe-top) - var(--trip-safe-bottom)); }
+.trip-toast { bottom: calc(95px + var(--trip-safe-bottom)); }
+.session-loading { padding: var(--trip-safe-top) var(--trip-safe-right) var(--trip-safe-bottom) var(--trip-safe-left); }
+@media (min-width: 900px) {
+  .app-sidebar { left: var(--trip-safe-left); padding-top: calc(32px + var(--trip-safe-top)); padding-bottom: calc(22px + var(--trip-safe-bottom)); }
+  .app-content { padding-bottom: calc(50px + var(--trip-safe-bottom)); }
+  .trip-toast { bottom: calc(24px + var(--trip-safe-bottom)); }
+}

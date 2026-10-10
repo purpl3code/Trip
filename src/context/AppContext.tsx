@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { AppContext } from './appState';
 import type { Post, User, Comment } from '../mockData';
 import { mockPosts, mockUsers } from '../mockData';
@@ -114,6 +115,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       root.classList.remove('dark');
     }
     localStorage.setItem('trip_theme', theme);
+
+    if (Capacitor.isNativePlatform()) {
+      void SystemBars.setStyle({
+        style: theme === 'dark' ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
+      }).catch(error => console.error('Não foi possível atualizar a barra do sistema:', error));
+    }
 
     // Update <meta name="theme-color"> dynamically
     const themeColor = theme === 'dark' ? '#0B0E14' : '#F8FAFC';

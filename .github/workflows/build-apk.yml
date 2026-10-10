@@ -100,5 +100,5 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk Trip.apk
           gh release create "$RELEASE_TAG" Trip.apk \
             --target "$GITHUB_SHA" \
-            --title "Trip 1.1.0 · Build ${{ github.run_number }}" \
-            --notes "APK Android assinado com o novo design, ícone e melhorias de funcionamento. Baixe Trip.apk nos arquivos desta versão."
+            --title "Trip · Build ${{ github.run_number }}" \
+            --generate-notes
