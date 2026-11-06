@@ -7,7 +7,7 @@ Tom: próximo, direto, sem promessas, estatísticas ou conteúdo inventado.
 Escopo: refinar a camada visual e os componentes existentes; preservar autenticação e Supabase.
 Hierarquia: relato/foto > nome do lugar > ações > metadados/navegação.
 CRAFT_LEVEL 8, MOTION_INTENSITY 2, VISUAL_DENSITY 5, DESIGN_VARIANCE 4.
-Detalhe de identidade: indicador de navegação em forma de agulha a 45 graus.
+Detalhe de identidade: seleção de aba em cápsula suave de âmbar; quatro opções iguais na barra inferior.
 
 ## Restrições aprendidas
 - Não reintroduzir a seção “Seu diário de bordo” nem o atalho “Qual foi sua última descoberta?”.
@@ -17,3 +17,10 @@ Detalhe de identidade: indicador de navegação em forma de agulha a 45 graus.
 - A busca atual consulta relatos da comunidade; API externa de lugares fica para depois.
 - Não publicar relatos ou comentários durante a revisão.
 - Evitar animações de entrada e dependências de animação.
+
+## Correções aprovadas em 06/11/2026
+- Tema e sino no cabeçalho; sem opção de tema na barra inferior.
+- Relatar é uma página dedicada, sem popup, e mantém rascunho ao trocar de aba.
+- Mesma tipografia e posição para os títulos de Explorar, Buscar e Relatar.
+- Perfil sem “Voltar a explorar” e sem cabeçalho extra “Meu diário”.
+- Ícones e textos das quatro abas em linhas fixas e com a mesma largura/altura.

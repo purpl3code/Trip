@@ -21,3 +21,7 @@ Verificações e limitações serão atualizadas após a inspeção no navegador
 **Validation:** npm run build, npm run lint, npm test (5/5) e git diff --check passaram.
 **Limits:** não foi executado detector/score UI Craft nem auditoria automatizada de contraste. A inspeção no navegador não substitui teste no Android físico. Novo APK não gerado nesta etapa.
 **Verdict:** pronto para avaliação na prévia local, com evidência de navegação e responsividade; validação nativa pendente antes da próxima distribuição.
+
+## Entrega 1.2.0 — 06/11/2026
+Relatar passou a página dedicada, com rascunho preservado entre abas; cabeçalhos compartilhados, sinos e tema no topo, barra inferior uniforme e perfil sem título extra. Medição desktop dos três cabeçalhos: x=411,5 e y=108, fonte 28 px; barra a 506 px: quatro botões 117,25 × 64, ícones em y=821 e rótulos em y=849.
+APK assinado 1.2.0 publicado em https://github.com/purpl3code/Trip/releases/tag/apk-32. Sete testes Node e os testes Java de URL/hash passaram no GitHub Actions. SHA-256 de update.json corresponde ao digest do APK publicado. Instalação no aparelho físico ainda precisa ser conferida.
