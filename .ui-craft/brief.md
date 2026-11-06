@@ -7,7 +7,7 @@ Tom: próximo, direto, sem promessas, estatísticas ou conteúdo inventado.
 Escopo: refinar a camada visual e os componentes existentes; preservar autenticação e Supabase.
 Hierarquia: relato/foto > nome do lugar > ações > metadados/navegação.
 CRAFT_LEVEL 8, MOTION_INTENSITY 2, VISUAL_DENSITY 5, DESIGN_VARIANCE 4.
-Detalhe de identidade: seleção de aba em cápsula suave de âmbar; quatro opções iguais na barra inferior.
+Detalhe de identidade: seleção de aba somente com ícone/texto em âmbar, sem cápsula, fundo ou borda; quatro opções iguais na barra inferior.
 
 ## Restrições aprendidas
 - Não reintroduzir a seção “Seu diário de bordo” nem o atalho “Qual foi sua última descoberta?”.
@@ -24,3 +24,5 @@ Detalhe de identidade: seleção de aba em cápsula suave de âmbar; quatro opç
 - Mesma tipografia e posição para os títulos de Explorar, Buscar e Relatar.
 - Perfil sem “Voltar a explorar” e sem cabeçalho extra “Meu diário”.
 - Ícones e textos das quatro abas em linhas fixas e com a mesma largura/altura.
+
+- Navegação minimalista: seleção apenas em cor e espessura sutil do ícone, sem caixa ao redor.

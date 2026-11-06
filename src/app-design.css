@@ -294,24 +294,24 @@ h1, h2, h3 { text-wrap: balance; }
 .bottom-nav {
   background: var(--surface-raised); gap: var(--space-1);
   padding-top: 10px; border-top: 1px solid var(--line-soft);
-  box-shadow: 0 -4px 20px #00000008;
+  box-shadow: none;
 }
 .bottom-nav button {
   position: relative; min-height: 58px; padding: 8px 4px;
-  border-radius: 16px; gap: 6px; color: var(--fg-muted);
+  border-radius: 10px; gap: 6px; color: var(--fg-muted);
   font-size: 11px; font-weight: 600;
-  transition: background-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out;
+  transition: color 150ms ease-out;
 }
 .bottom-nav button > svg { stroke-width: 1.8; flex-shrink: 0; }
 .bottom-nav button[aria-current="page"] {
   color: var(--accent-readable);
-  background: color-mix(in srgb, var(--amber-400) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber-400) 20%, transparent);
+  background: transparent;
+  box-shadow: none;
 }
-.bottom-nav button[aria-current="page"] > svg { stroke-width: 2.4; }
+.bottom-nav button[aria-current="page"] > svg { stroke-width: 2; }
 .bottom-nav button[aria-current="page"]::before { content: none; }
 @media (hover: hover) and (pointer: fine) {
-  .bottom-nav button:not([aria-current="page"]):hover { background: var(--surface-control); color: var(--fg-main); }
+  .bottom-nav button:not([aria-current="page"]):hover { color: var(--fg-main); }
 }
 .page-heading { margin-bottom: var(--space-6); }
 .page-heading h1 { font-size: 28px; font-weight: 700; margin-top: var(--space-2); }
@@ -494,7 +494,7 @@ h1, h2, h3 { text-wrap: balance; }
 }
 .bottom-nav-icon { width: 24px; height: 24px; display: grid; place-items: center; }
 .bottom-nav-icon svg { display: block; stroke-width: 1.8; }
-.bottom-nav button[aria-current="page"] .bottom-nav-icon svg { stroke-width: 2.4; }
+.bottom-nav button[aria-current="page"] .bottom-nav-icon svg { stroke-width: 2; }
 
 .header-notifications { position: relative; color: var(--fg-secondary); border-radius: 50%; }
 .notification-dot { position: absolute; top: 8px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--amber-400); box-shadow: 0 0 0 2px var(--surface-canvas); }
