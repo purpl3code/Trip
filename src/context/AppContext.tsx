@@ -13,8 +13,8 @@ export interface AppContextType {
   posts: Post[];
   users: User[];
   currentUser: User | null;
-  activeTab: 'feed' | 'search' | 'profile';
-  setActiveTab: (tab: 'feed' | 'search' | 'profile') => void;
+  activeTab: 'feed' | 'search' | 'profile' | 'create';
+  setActiveTab: (tab: 'feed' | 'search' | 'profile' | 'create') => void;
   selectedUser: User | null;
   setSelectedUser: (user: User | null) => void;
   theme: 'dark' | 'light';
@@ -75,7 +75,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'search' | 'profile' | 'create'>('feed');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string | null>(null);
@@ -123,7 +123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Update <meta name="theme-color"> dynamically
-    const themeColor = theme === 'dark' ? '#0B0E14' : '#F8FAFC';
+    const themeColor = theme === 'dark' ? '#0d1117' : '#f5f6f7';
     const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
     if (metaThemeColors.length > 0) {
       metaThemeColors.forEach((m) => m.setAttribute('content', themeColor));

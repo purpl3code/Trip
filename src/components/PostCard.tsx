@@ -34,15 +34,11 @@ export function PostCard({ post }: { post: Post }) {
     catch (error) { setDeleteError(errorMessage(error)); }
     finally { setDeleting(false); }
   };
-  return <article className="post-card">
+  return <article className={`post-card ${post.photos.length ? "has-photos" : ""}`}>
     <header className="post-header">
       <button className="post-author" onClick={() => { setSelectedUser(post.user); setActiveTab('profile'); }}><img src={post.user.avatar} alt="" /><div><strong>{post.user.displayName}</strong><span>@{post.user.username}</span></div></button>
       <div className="post-meta"><time dateTime={post.createdAt} title={date.toLocaleString('pt-BR')}>{formattedDate}</time>{currentUser?.id === post.user.id && <button className="icon-button" aria-label="Excluir relato" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>}</div>
     </header>
-    <div className="post-location"><div><MapPin size={16} /><h3>{post.location}</h3></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><Star size={14} fill="currentColor" />{average}</span></div>
-    <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span></div>
-    <p className="post-content">{content}</p>
-    {longContent && <button className="text-button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? 'Ler menos' : 'Continuar lendo'}</button>}
     {post.photos.length > 0 && <div className="post-photos">
       <div className="post-photo-frame">
         <button className="post-photo-open" aria-label={`Ampliar foto ${activeIndex + 1} de ${post.location}`} onClick={() => setExpandedPhotoUrl(post.photos[activeIndex])}><img src={post.photos[activeIndex]} alt={`Foto de ${post.location}`} loading="lazy" /></button>
@@ -50,6 +46,10 @@ export function PostCard({ post }: { post: Post }) {
       </div>
       {post.photos.length > 1 && <div className="photo-thumbnails">{post.photos.map((photo,index) => <button key={photo + index} aria-label={`Ver foto ${index + 1}`} aria-pressed={activeIndex === index} onClick={() => setPhotoIndex(index)}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
     </div>}
+    <div className="post-location"><div><MapPin size={16} /><h2>{post.location}</h2></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><Star size={14} fill="currentColor" />{average}</span></div>
+    <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span></div>
+    <p className="post-content">{content}</p>
+    {longContent && <button className="text-button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? 'Ler menos' : 'Continuar lendo'}</button>}
     <footer className="post-actions">
       <button disabled={liking} aria-pressed={!!post.isLiked} aria-label={post.isLiked ? 'Descurtir relato' : 'Curtir relato'} className={post.isLiked ? 'liked' : ''} onClick={() => void like()}><Heart size={19} fill={post.isLiked ? 'currentColor' : 'none'} /><span>{post.likesCount}</span></button>
       <button aria-expanded={showComments} aria-label="Comentários do relato" onClick={() => setShowComments(!showComments)}><MessageCircle size={19} /><span>{post.comments.length}</span></button>

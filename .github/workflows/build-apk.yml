@@ -79,17 +79,24 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease \
+          ./gradlew testReleaseUnitTest assembleRelease \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/trip-release.keystore \
             -Pandroid.injected.signing.store.password=TripApp2024! \
             -Pandroid.injected.signing.key.alias=trip-key \
             -Pandroid.injected.signing.key.password=TripApp2024!
 
+      - name: Generate Update Manifest
+        env:
+          RELEASE_TAG: apk-${{ github.run_number }}
+        run: node scripts/release-manifest.mjs
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: trip-app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            update.json
 
       - name: Publish APK on GitHub Releases
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -98,7 +105,7 @@ jobs:
           RELEASE_TAG: apk-${{ github.run_number }}
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk Trip.apk
-          gh release create "$RELEASE_TAG" Trip.apk \
+          gh release create "$RELEASE_TAG" Trip.apk update.json \
             --target "$GITHUB_SHA" \
             --title "Trip · Build ${{ github.run_number }}" \
             --generate-notes

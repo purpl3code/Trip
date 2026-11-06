@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "icons:android": "node scripts/generate-icons.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "brand:generate": "node scripts/generate-brand.mjs && npm run icons:android"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useApp } from '../context/appState';
 import type { User } from '../mockData';
-import { Star, MapPin, Grid2X2, UserPlus, UserCheck, LogOut, Pencil, BookOpen, ArrowLeft, Plus, ArrowUpRight } from 'lucide-react';
+import { MapPin, Grid2X2, UserPlus, UserCheck, LogOut, Pencil, BookOpen, Plus } from 'lucide-react';
 import { PostCard } from './PostCard';
+import { LocationCard } from './LocationCard';
 import { groupLocations, normalizeSearch } from '../utils/discovery';
 import { errorMessage } from '../utils/errors';
 
 export function UserProfile({ user, onNewPost }: { user: User; onNewPost: () => void }) {
-  const { posts, currentUser, toggleFollow, handleSignOut, setIsEditProfileOpen, setExpandedPhotoUrl, setActiveTab, notify } = useApp();
+  const { posts, currentUser, toggleFollow, handleSignOut, setIsEditProfileOpen, setExpandedPhotoUrl, notify } = useApp();
   const [tab, setTab] = useState<'posts' | 'locations' | 'photos'>('posts');
   const [pending, setPending] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -21,7 +22,6 @@ export function UserProfile({ user, onNewPost }: { user: User; onNewPost: () => 
     try { await toggleFollow(user.id); } catch (error) { notify(errorMessage(error), 'error'); } finally { setPending(false); }
   };
   return <section className="profile-page">
-    <button className="back-link" onClick={() => setActiveTab('feed')}><ArrowLeft size={17} /> Voltar a explorar</button>
     <div className="profile-card">
       <div className="profile-cover"><img src={user.banner} alt={`Capa do diário de ${user.displayName}`} /></div>
       <div className="profile-details">
@@ -32,7 +32,7 @@ export function UserProfile({ user, onNewPost }: { user: User; onNewPost: () => 
     </div>
     <div className="segmented-control profile-tabs" aria-label="Conteúdo do diário">{([['posts','Relatos',BookOpen],['locations','Lugares',MapPin],['photos','Fotos',Grid2X2]] as const).map(([id,label,Icon]) => <button key={id} aria-pressed={tab === id} onClick={() => { setTab(id); setSelectedLocation(null); }}><Icon size={17} />{label}</button>)}</div>
     {tab === 'posts' && <>{selectedLocation && <div className="location-filter"><span><MapPin size={16} />{locations.find(location => normalizeSearch(location.name) === selectedLocation)?.name}</span><button className="text-button" onClick={() => setSelectedLocation(null)}>Ver todos os relatos</button></div>}<div className="post-list">{filteredPosts.map(post => <PostCard key={post.id} post={post} />)}</div></>}
-    {tab === 'locations' && <div className="location-grid">{locations.map(location => <button key={location.name} className="location-card" onClick={() => { setSelectedLocation(normalizeSearch(location.name)); setTab('posts'); }}><div className="location-card-icon"><MapPin size={21} /></div><div><h3>{location.name}</h3><p>{location.posts.length} {location.posts.length === 1 ? 'visita' : 'visitas'} · <Star size={12} fill="currentColor" />{location.rating.toFixed(1)}</p></div><ArrowUpRight size={18} /></button>)}</div>}
+    {tab === 'locations' && <div className="location-grid">{locations.map(location => <LocationCard key={location.name} location={location} onOpen={() => { setSelectedLocation(normalizeSearch(location.name)); setTab("posts"); }} />)}</div>}
     {tab === 'photos' && <div className="profile-gallery">{photos.map(({photo,location},index) => <button key={photo+index} aria-label={`Ampliar foto de ${location}`} onClick={() => setExpandedPhotoUrl(photo)}><img src={photo} alt={`Foto de ${location}`} loading="lazy" /><span>{location}</span></button>)}</div>}
     {((tab === 'posts' && !userPosts.length) || (tab === 'locations' && !locations.length) || (tab === 'photos' && !photos.length)) && <div className="empty-state"><BookOpen size={32} /><h2>{own ? 'Seu diário está esperando a primeira história' : 'Novas histórias estão por vir'}</h2><p>{own ? 'Compartilhe um lugar ou sabor que marcou seu dia. Suas descobertas vão aparecer aqui.' : 'Este diário ainda não tem conteúdo nesta seção.'}</p>{own && <button className="btn-primary" onClick={onNewPost}><Plus size={18} />Criar meu primeiro relato</button>}</div>}
   </section>;

@@ -1,11 +1,17 @@
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const source = await readFile(path.join(root, 'src/assets/app-icon.svg'), 'utf8');
+const symbol = await readFile(path.join(root, 'src/assets/trip-symbol.svg'), 'utf8');
+const paths = [...symbol.matchAll(/<path\b[^>]*\/>/g)].map(match => match[0]);
+const drawing = paths.join('\n');
+const source = `<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108"><title>Trip — Norte aberto</title><rect width="108" height="108" fill="#ffad32"/><g transform="translate(21 21) scale(0.2578125)" fill="#221506">${drawing}</g></svg>\n`;
+await writeFile(path.join(root, 'src/assets/app-icon.svg'), source);
 const res = path.join(root, 'android/app/src/main/res');
+const vectorPaths = paths.map(p => `<path android:fillColor="#221506" android:fillType="evenOdd" android:pathData="${p.match(/\bd="([^"]+)"/)[1]}"/>`).join('\n    ');
+await writeFile(path.join(res, 'drawable/ic_launcher_foreground.xml'), `<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><group android:translateX="21" android:translateY="21" android:scaleX="0.2578125" android:scaleY="0.2578125">\n    ${vectorPaths}\n</group></vector>\n`);
 const densities = [
   ['mdpi', 48], ['hdpi', 72], ['xhdpi', 96], ['xxhdpi', 144], ['xxxhdpi', 192],
 ];

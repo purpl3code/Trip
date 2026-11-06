@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/appState';
-import { Compass, Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Brand } from './Brand';
+import { Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const AuthView: React.FC = () => {
   const { authError, authMessage, clearAuthFeedback, isAuthLoading, handleSignIn, handleSignUp } = useApp();
@@ -31,10 +32,7 @@ export const AuthView: React.FC = () => {
         
         {/* Brand Header */}
         <header className="auth-header">
-          <div className="auth-brand">
-            <span className="auth-brand-icon"><Compass size={26} aria-hidden="true" /></span>
-            <span className="auth-wordmark">TRIP</span>
-          </div>
+          <Brand />
           <p className="auth-eyebrow">Viagens, sabores e boas histórias.</p>
           <h1 id="auth-heading">{isSignUp ? 'Sua história começa aqui.' : 'Bem-vindo de volta.'}</h1>
           <p className="auth-description">{isSignUp ? 'Crie seu diário e compartilhe suas descobertas.' : 'Entre para continuar seu diário de descobertas.'}</p>
@@ -55,7 +53,7 @@ export const AuthView: React.FC = () => {
           {isSignUp && (
             <>
               {/* Display Name */}
-              <div className="space-y-1.5 animate-slide-up stagger-1">
+              <div className="space-y-1.5">
                 <label htmlFor="auth-name" className="auth-label">
                   <User className="w-3 h-3 text-[var(--clr-primary)]" />
                   Nome de exibição
@@ -69,12 +67,12 @@ export const AuthView: React.FC = () => {
                   placeholder="Seu nome completo"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
                 />
               </div>
 
               {/* Username */}
-              <div className="space-y-1.5 animate-slide-up stagger-2">
+              <div className="space-y-1.5">
                 <label htmlFor="auth-username" className="auth-label">
                   <User className="w-3 h-3 text-[var(--clr-primary)]" />
                   Nome de usuário
@@ -93,12 +91,12 @@ export const AuthView: React.FC = () => {
                   placeholder="Nome de usuário desejado"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
                 />
               </div>
 
               {/* Bio */}
-              <div className="space-y-1.5 animate-slide-up stagger-3">
+              <div className="space-y-1.5">
                 <label htmlFor="auth-bio" className="auth-label">
                   <Sparkles className="w-3 h-3 text-[var(--clr-primary)]" />
                   Bio curta (opcional)
@@ -110,14 +108,14 @@ export const AuthView: React.FC = () => {
                   placeholder="Fale um pouco sobre você..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
+                  className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
                 />
               </div>
             </>
           )}
 
           {/* Email */}
-          <div className="space-y-1.5 animate-slide-up stagger-4">
+          <div className="space-y-1.5">
             <label htmlFor="auth-email" className="auth-label">
               <Mail className="w-3 h-3 text-[var(--clr-primary)]" />
               E-mail
@@ -133,12 +131,12 @@ export const AuthView: React.FC = () => {
               placeholder="voce@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
+              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
             />
           </div>
 
           {/* Password */}
-          <div className="space-y-1.5 animate-slide-up stagger-5">
+          <div className="space-y-1.5">
             <label htmlFor="auth-password" className="auth-label">
               <Lock className="w-3 h-3 text-[var(--clr-primary)]" />
               Senha
@@ -154,7 +152,7 @@ export const AuthView: React.FC = () => {
               placeholder={isSignUp ? 'Pelo menos 6 caracteres' : 'Digite sua senha'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-all placeholder:text-[var(--text-muted)]"
+              className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
             />
             <button type="button" className="auth-password-toggle" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
@@ -164,7 +162,7 @@ export const AuthView: React.FC = () => {
 
           {/* Keep Connected Checkbox */}
           {!isSignUp && (
-            <div className="flex items-center gap-2.5 py-1 animate-slide-up stagger-6">
+            <div className="flex items-center gap-2.5 py-1">
               <input
                 type="checkbox"
                 id="keep-logged"

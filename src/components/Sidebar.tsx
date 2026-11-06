@@ -1,5 +1,5 @@
 import { useApp } from '../context/appState';
-import { Compass, User, Moon, Sun, Search, LogOut, Plus, ArrowUpRight } from 'lucide-react';
+import { Compass, User, Moon, Sun, Search, LogOut, Plus } from 'lucide-react';
 import { Brand } from './Brand';
 
 export function Sidebar({ onOpenNewPost }: { onOpenNewPost: () => void }) {
@@ -12,8 +12,7 @@ export function Sidebar({ onOpenNewPost }: { onOpenNewPost: () => void }) {
         <button aria-current={activeTab === 'search' ? 'page' : undefined} onClick={() => setActiveTab('search')}><Search size={21} /> Buscar</button>
         <button aria-current={activeTab === 'profile' ? 'page' : undefined} onClick={() => { setSelectedUser(currentUser); setActiveTab('profile'); }}><User size={21} /> Meu diário</button>
       </nav>
-      <button className="btn-primary sidebar-create" onClick={onOpenNewPost}><Plus size={18} /> Criar relato</button>
-      <div className="sidebar-note"><Compass size={25} /><h3>Viva. Descubra. Conte.</h3><p>Seu olhar pode inspirar a próxima aventura de alguém.</p><button onClick={() => setActiveTab('search')}>Encontrar novos lugares <ArrowUpRight size={16} /></button></div>
+      <button className="btn-primary sidebar-create" aria-current={activeTab === 'create' ? 'page' : undefined} onClick={onOpenNewPost}><Plus size={18} /> Criar relato</button>
     </div>
     <footer><button className="sidebar-theme" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}<span>{theme === 'dark' ? 'Tema claro' : 'Tema escuro'}</span></button>
       <div className="sidebar-user"><img src={currentUser.avatar} alt="" /><div><strong>{currentUser.displayName}</strong><span>@{currentUser.username}</span></div><button className="icon-button" aria-label="Sair da conta" onClick={() => void handleSignOut()}><LogOut size={18} /></button></div>

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../context/appState';
+import { PageHeading } from './PageHeading';
 import { Star, ThumbsUp, ThumbsDown, ImagePlus, X, Crop, Send, LoaderCircle } from 'lucide-react';
-import { Dialog } from './Dialog';
 import { useObjectUrls } from '../hooks/useObjectUrls';
 import { errorMessage } from '../utils/errors';
 
-export function NewPostModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function NewPostPage({ active }: { active: boolean }) {
   const { addPost, notify, setActiveTab } = useApp();
   const [content, setContent] = useState('');
   const [location, setLocation] = useState('');
@@ -20,6 +20,9 @@ export function NewPostModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [landscape, setLandscape] = useState(true);
   const [cropping, setCropping] = useState(false);
   const busy = submitting || cropping;
+  useEffect(() => {
+    if (active) document.getElementById('new-post-title')?.focus({ preventScroll: true });
+  }, [active]);
   const selectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(event.target.files || []);
     event.target.value = '';
@@ -29,12 +32,13 @@ export function NewPostModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (submitting || !content.trim() || !location.trim()) return;
+    if (submitting) return;
+    if (!location.trim() || !content.trim()) { setError("Preencha o local e conte como foi a experiência."); document.getElementById(!location.trim() ? "post-location" : "post-content")?.focus(); return; }
     setSubmitting(true); setError('');
     try {
       await addPost(content.trim(), location.trim(), rating, verdict, [], files);
       setContent(''); setLocation(''); setRating(5); setVerdict('Gostei'); setFiles([]);
-      setActiveTab('feed'); onClose(); notify('Sua descoberta foi publicada!');
+      setActiveTab('feed'); notify('Sua descoberta foi publicada!');
     } catch (err) { setError(errorMessage(err)); } finally { setSubmitting(false); }
   };
   const crop = async () => {
@@ -55,18 +59,18 @@ export function NewPostModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setCropIndex(null);
     } catch (err) { setError(errorMessage(err)); } finally { setCropping(false); }
   };
-  return <Dialog open={isOpen} onClose={() => cropIndex !== null ? setCropIndex(null) : onClose()} title={cropIndex !== null ? 'Encontre o melhor enquadramento' : 'Uma nova descoberta'} busy={busy}>
-    {cropIndex !== null ? <div className="dialog-content crop-form"><p className="muted">Ajuste a posição para recortar sua foto em um quadrado.</p><div className="crop-preview" style={{ backgroundImage: `url(${urls[cropIndex]})`, backgroundSize: landscape ? 'auto 100%' : '100% auto', backgroundPosition: landscape ? `${cropOffset*100}% center` : `center ${cropOffset*100}%` }} /><label className="field-label" htmlFor="crop-offset">Posição da foto</label><input id="crop-offset" type="range" min="0" max="1" step=".01" value={cropOffset} disabled={cropping} onChange={event => setCropOffset(Number(event.target.value))} /><div className="dialog-actions"><button className="btn-secondary" disabled={cropping} onClick={() => setCropIndex(null)}>Voltar</button><button className="btn-primary" disabled={cropping} onClick={() => void crop()}>{cropping ? 'Recortando…' : 'Aplicar corte'}</button></div>{error && <p className="form-error" role="alert">{error}</p>}</div> :
-    <form className="dialog-content trip-form" onSubmit={submit}>
-      <p className="form-intro">Um lugar, um sabor, uma experiência. Conte do seu jeito.</p>
-      <div className="form-field"><label htmlFor="post-location">Onde você esteve?</label><input id="post-location" required maxLength={120} placeholder="Nome do lugar ou estabelecimento" value={location} disabled={busy} onChange={event => setLocation(event.target.value)} /></div>
+  return <section className="new-post-page" hidden={!active} aria-labelledby="new-post-title">
+    <PageHeading titleId="new-post-title" focusable title={cropIndex !== null ? 'Encontre o melhor enquadramento' : 'Uma nova descoberta'} description="Um lugar, um sabor, uma experiência. Conte do seu jeito." />
+    {cropIndex !== null ? <div className="composer-surface crop-form"><p className="muted">Ajuste a posição para recortar sua foto em um quadrado.</p><div className="crop-preview" style={{ backgroundImage: `url(${urls[cropIndex]})`, backgroundSize: landscape ? 'auto 100%' : '100% auto', backgroundPosition: landscape ? `${cropOffset*100}% center` : `center ${cropOffset*100}%` }} /><label className="field-label" htmlFor="crop-offset">Posição da foto</label><input id="crop-offset" type="range" min="0" max="1" step=".01" value={cropOffset} disabled={cropping} onChange={event => setCropOffset(Number(event.target.value))} /><div className="dialog-actions"><button className="btn-secondary" disabled={cropping} onClick={() => setCropIndex(null)}>Voltar</button><button className="btn-primary" disabled={cropping} onClick={() => void crop()}>{cropping ? 'Recortando…' : 'Aplicar corte'}</button></div>{error && <p className="form-error" role="alert">{error}</p>}</div> :
+    <form className="composer-surface trip-form" onSubmit={submit}>
+      <div className="form-field"><label htmlFor="post-location">Onde você esteve?</label><input id="post-location" name="location" autoComplete="off" required maxLength={120} placeholder="Nome do lugar ou estabelecimento" value={location} disabled={busy} onChange={event => setLocation(event.target.value)} /></div>
       <fieldset className="rating-field"><legend>Sua avaliação</legend><div className="star-picker">{[1,2,3,4,5].map(star => <button type="button" disabled={busy} key={star} aria-label={`${star} ${star === 1 ? 'estrela' : 'estrelas'}`} aria-pressed={rating === star} onClick={() => setRating(star)}><Star size={28} fill={star <= rating ? 'currentColor' : 'none'} /></button>)}<span>{rating}/5</span></div></fieldset>
       <div className="verdict-picker"><button type="button" disabled={busy} aria-pressed={verdict === 'Gostei'} onClick={() => setVerdict('Gostei')}><ThumbsUp size={17} /> Gostei</button><button type="button" disabled={busy} aria-pressed={verdict === 'Não gostei'} onClick={() => setVerdict('Não gostei')}><ThumbsDown size={17} /> Não gostei</button></div>
-      <div className="form-field"><label htmlFor="post-content">Como foi a experiência?</label><textarea id="post-content" required maxLength={5000} rows={4} placeholder="O que fez esse momento valer a pena? O que você recomendaria?" value={content} disabled={busy} onChange={event => setContent(event.target.value)} /><span className="field-hint">{content.length}/5000 caracteres</span></div>
+      <div className="form-field"><label htmlFor="post-content">Como foi a experiência?</label><textarea id="post-content" name="content" aria-describedby="post-content-hint" required maxLength={5000} rows={4} placeholder="O que fez esse momento valer a pena? O que você recomendaria?" value={content} disabled={busy} onChange={event => setContent(event.target.value)} /><span id="post-content-hint" className="field-hint">{content.length}/5000 caracteres</span></div>
       <div className="photo-upload-heading"><div><strong>Fotos da descoberta</strong><p>Até 8 fotos · JPG, PNG ou WebP · 10 MB cada</p></div><label className="upload-button"><ImagePlus size={18} /><span>Adicionar</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} aria-label="Adicionar fotos ao relato" onChange={selectFiles} /></label></div>
       {files.length > 0 && <div className="upload-previews">{files.map((file,index) => <div key={index}><img src={urls[index]} alt={`Prévia da foto ${index+1}: ${file.name}`} onLoad={event => { if (cropIndex === index) setLandscape(event.currentTarget.naturalWidth >= event.currentTarget.naturalHeight); }} /><button type="button" className="preview-remove" disabled={busy} aria-label={`Remover foto ${index+1}`} onClick={() => setFiles(previous => previous.filter((_,i) => i !== index))}><X size={16} /></button><button type="button" className="preview-crop" disabled={busy} aria-label={`Recortar foto ${index+1}`} onClick={() => { const image = new Image(); image.onload = () => setLandscape(image.width >= image.height); image.src = urls[index]; setCropIndex(index); setCropOffset(.5); }}><Crop size={13} /> Recortar</button></div>)}</div>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="form-submit"><span>Seu rascunho fica aqui ao fechar.</span><button type="submit" className="btn-primary" disabled={busy || !content.trim() || !location.trim()}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{submitting ? 'Publicando…' : 'Publicar relato'}</button></div>
+      <div className="form-submit"><span id="post-draft-hint">Seu rascunho é mantido ao trocar de aba.</span><button type="submit" className="btn-primary" disabled={busy}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{submitting ? 'Publicando…' : 'Publicar relato'}</button></div>
     </form>}
-  </Dialog>;
+  </section>;
 }
