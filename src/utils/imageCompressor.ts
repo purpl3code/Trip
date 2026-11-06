@@ -2,7 +2,7 @@
  * Utility to compress images client-side before uploading them.
  * This resizes the image to a maximum dimension of 1600px (preserving aspect ratio)
  * and compresses it using JPEG encoding at 82% quality.
- * This results in a ~90% decrease in file size (e.g. from 5MB to ~250KB) with zero visible quality loss on mobile/desktop screens.
+ * Compression reduces upload cost; the resulting size depends on the source image.
  */
 export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -12,10 +12,8 @@ export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): 
     }
 
     const reader = new FileReader();
-    reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target?.result as string;
       img.onload = () => {
         let width = img.width;
         let height = img.height;
@@ -61,9 +59,11 @@ export const compressImage = (file: File, maxDimension = 1600, quality = 0.82): 
       img.onerror = () => {
         reject(new Error('Não foi possível abrir a imagem. Escolha outra foto.'));
       };
+      img.src = event.target?.result as string;
     };
     reader.onerror = () => {
       reject(new Error('Não foi possível ler a imagem. Escolha outra foto.'));
     };
+    reader.readAsDataURL(file);
   });
 };

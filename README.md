@@ -32,7 +32,7 @@ npm run lint
 npm test
 ```
 
-Os testes cobrem busca sem acentos, agrupamento de lugares, média de todas as avaliações e mensagens de erro. A revisão manual deve incluir os dois temas, cadastro/login, busca, perfil, formulários e navegação pelo teclado.
+Os testes cobrem busca sem acentos, agrupamento de lugares, médias, erros, restauração de rascunhos, armazenamento de sessão, gesto de atualização e metadados do APK. A revisão manual deve incluir os dois temas, cadastro/login, busca, perfil, formulários e navegação pelo teclado.
 
 ## Ícone e Android
 
@@ -51,7 +51,11 @@ Para compilar localmente, configure Java 21 e o Android SDK. A pipeline em .gith
 - Busca ignora acentos e abre os relatos de cada lugar.
 - As médias dos lugares consideram cada avaliação individual.
 - Formulários preservam o conteúdo ao falhar e mostram o resultado de envio.
-- O rascunho de um relato é mantido ao fechar a janela durante a sessão atual; fotos locais são liberadas ao descartar ou enviar.
+- Relatar abre uma página dedicada. Texto, avaliação e fotos do rascunho são salvos por conta em IndexedDB e restaurados após recarregar, quando o armazenamento do aparelho está disponível.
+- O feed atualiza ao puxar para baixo no topo; não há botão extra de atualizar.
+- A camada Liquid Glass adapta cabeçalho, navegação, cartões, formulários e diálogos aos dois temas, com alternativas de acessibilidade.
 - As janelas usam Escape, foco contido, restauração de foco e fundo inativo.
 - Fotos aceitam JPG, PNG e WebP de até 10 MB; relatos têm limite de oito fotos.
 - A confirmação de cadastro por e-mail respeita a configuração de Auth do Supabase.
+
+A revisão da versão 2.0 e seus limites de validação estão em [docs/trip-2.0-review.md](docs/trip-2.0-review.md).

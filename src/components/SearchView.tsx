@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/appState';
 import { PostCard } from './PostCard';
 import { LocationCard } from './LocationCard';
@@ -14,6 +14,7 @@ export function SearchView() {
   const [filter, setFilter] = useState<'all' | 'locations' | 'posts' | 'people'>('all');
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  useEffect(() => { window.scrollTo({ top:0, behavior:'instant' }); },[selectedLocation]);
   const clean = normalizeSearch(query);
   const locations = groupLocations(posts);
   const matchedLocations = locations.filter(location => normalizeSearch(location.name).includes(clean));

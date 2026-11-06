@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/appState';
 import { Brand } from './Brand';
+import { authStorage } from '../utils/authStorage';
 import { Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const AuthView: React.FC = () => {
@@ -12,12 +13,11 @@ export const AuthView: React.FC = () => {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
-  const [keepLogged, setKeepLogged] = useState(() => {
-    return localStorage.getItem('trip_keep_logged') !== 'false';
-  });
+  const [keepLogged, setKeepLogged] = useState(authStorage.getKeepLogged);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAuthLoading) return;
     if (isSignUp) {
       await handleSignUp(email, password, username, displayName, bio);
     } else {
@@ -59,8 +59,10 @@ export const AuthView: React.FC = () => {
                   Nome de exibição
                 </label>
                 <input
+                  disabled={isAuthLoading}
                   id="auth-name"
                   name="name"
+                  maxLength={60}
                   autoComplete="name"
                   type="text"
                   required
@@ -78,6 +80,7 @@ export const AuthView: React.FC = () => {
                   Nome de usuário
                 </label>
                 <input
+                  disabled={isAuthLoading}
                   id="auth-username"
                   name="username"
                   pattern="[a-z0-9_]{3,30}"
@@ -102,8 +105,10 @@ export const AuthView: React.FC = () => {
                   Bio curta (opcional)
                 </label>
                 <input
+                  disabled={isAuthLoading}
                   id="auth-bio"
                   name="bio"
+                  maxLength={300}
                   type="text"
                   placeholder="Fale um pouco sobre você..."
                   value={bio}
@@ -121,6 +126,7 @@ export const AuthView: React.FC = () => {
               E-mail
             </label>
             <input
+              disabled={isAuthLoading}
               id="auth-email"
               name="email"
               autoComplete={isSignUp ? 'email' : 'username'}
@@ -143,6 +149,7 @@ export const AuthView: React.FC = () => {
             </label>
             <div className="auth-password-wrap">
             <input
+              disabled={isAuthLoading}
               id="auth-password"
               name="password"
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
@@ -154,7 +161,7 @@ export const AuthView: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl glass-input text-sm text-[var(--text-primary)] transition-colors placeholder:text-[var(--text-muted)]"
             />
-            <button type="button" className="auth-password-toggle" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+            <button type="button" className="auth-password-toggle" disabled={isAuthLoading} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </button>
             </div>
@@ -164,12 +171,13 @@ export const AuthView: React.FC = () => {
           {!isSignUp && (
             <div className="flex items-center gap-2.5 py-1">
               <input
+                disabled={isAuthLoading}
                 type="checkbox"
                 id="keep-logged"
                 checked={keepLogged}
                 onChange={(e) => {
                   setKeepLogged(e.target.checked);
-                  localStorage.setItem('trip_keep_logged', e.target.checked ? 'true' : 'false');
+                  authStorage.setKeepLogged(e.target.checked);
                 }}
                 className="w-4 h-4 rounded accent-[var(--clr-primary)] cursor-pointer"
               />

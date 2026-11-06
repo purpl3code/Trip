@@ -28,7 +28,7 @@ export function Dialog({ open, onClose, title, busy = false, children, className
     const wasInert = background?.inert || false;
     if (background) background.inert = true;
     document.body.style.overflow = 'hidden';
-    const focusable = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]') || []).filter(el => el.getClientRects().length);
+    const focusable = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]') || []).filter(el => el.getClientRects().length);
     const firstInput = ref.current?.querySelector<HTMLElement>('input:not([type="file"]), textarea');
     (firstInput || focusable()[0] || ref.current)?.focus();
     const keydown = (event: KeyboardEvent) => {

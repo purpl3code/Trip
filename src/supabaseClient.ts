@@ -1,33 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import { authStorage } from './utils/authStorage';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pzuqilmqlbdatketkedu.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_VvHze6GsxTGGULSQK_9nig_qh6SlRQO';
 
-// Custom Storage helper to support toggle between Local and Session storage dynamically
-const customStorage = {
-  getItem(key: string): string | null {
-    const keepLogged = localStorage.getItem('trip_keep_logged') !== 'false';
-    if (keepLogged) {
-      return localStorage.getItem(key);
-    } else {
-      return sessionStorage.getItem(key);
-    }
-  },
-  setItem(key: string, value: string): void {
-    const keepLogged = localStorage.getItem('trip_keep_logged') !== 'false';
-    if (keepLogged) {
-      localStorage.setItem(key, value);
-      sessionStorage.removeItem(key);
-    } else {
-      sessionStorage.setItem(key, value);
-      localStorage.removeItem(key);
-    }
-  },
-  removeItem(key: string): void {
-    localStorage.removeItem(key);
-    sessionStorage.removeItem(key);
-  }
-};
+// Respect the persistent/session preference and tolerate restricted device storage.
+const customStorage = authStorage.storage;
 
 let supabaseInstance: any = null;
 let isConfigured = false;

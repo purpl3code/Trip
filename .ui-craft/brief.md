@@ -6,7 +6,7 @@ Marca: Norte aberto; manter âmbar #FFAD32, lettering próprio e Plus Jakarta Sa
 Tom: próximo, direto, sem promessas, estatísticas ou conteúdo inventado.
 Escopo: refinar a camada visual e os componentes existentes; preservar autenticação e Supabase.
 Hierarquia: relato/foto > nome do lugar > ações > metadados/navegação.
-CRAFT_LEVEL 8, MOTION_INTENSITY 2, VISUAL_DENSITY 5, DESIGN_VARIANCE 4.
+CRAFT_LEVEL 8, MOTION_INTENSITY 2, VISUAL_DENSITY 5, DESIGN_VARIANCE 5.
 Detalhe de identidade: seleção de aba somente com ícone/texto em âmbar, sem cápsula, fundo ou borda; quatro opções iguais na barra inferior.
 
 ## Restrições aprendidas
@@ -26,3 +26,12 @@ Detalhe de identidade: seleção de aba somente com ícone/texto em âmbar, sem 
 - Ícones e textos das quatro abas em linhas fixas e com a mesma largura/altura.
 
 - Navegação minimalista: seleção apenas em cor e espessura sutil do ícone, sem caixa ao redor.
+
+- Feed sem botão de atualizar: gesto de puxar no topo com indicador discreto, sem interferir na rolagem normal.
+
+## Trip 2.0 — Liquid Glass
+- Material de vidro com reflexos finos, transparência e profundidade nos dois temas.
+- Navegação flutuante inteira em vidro; seleção de cada aba continua apenas em cor/ícone.
+- Blur concentrado no cabeçalho, navegação e diálogos; cartões usam material leve para rolagem fluida.
+- Fotos e relatos continuam sendo o foco; sem novas seções decorativas.
+- Contraste, modo de movimento reduzido e alternativa sem transparência são parte da entrega.

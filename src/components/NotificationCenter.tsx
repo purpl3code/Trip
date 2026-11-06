@@ -15,14 +15,15 @@ export function NotificationCenter() {
   const [error,setError] = useState('');
   const checkingRef = useRef(false);
   const lastCheck = useRef(0);
+  const installing = useRef(false);
   const native = supportsNativeUpdates();
   const downloading = phase === 'downloading';
   const check = useCallback(async () => {
-    if (!native || checkingRef.current) return;
+    if (!native || checkingRef.current || installing.current) return;
     checkingRef.current = true; setChecking(true); setError('');
     try { setInfo(await AppUpdater.check()); lastCheck.current = Date.now(); }
     catch (error) { setError(errorMessage(error,'Não foi possível buscar atualizações. Tente novamente.')); }
-    finally { checkingRef.current = false; setChecking(false); }
+    finally { lastCheck.current = Date.now(); checkingRef.current = false; setChecking(false); }
   },[native]);
   useEffect(() => {
     if (!native) return;
@@ -33,7 +34,8 @@ export function NotificationCenter() {
     return () => { document.removeEventListener('visibilitychange',onVisible); clearInterval(timer); };
   },[native,check]);
   const install = async () => {
-    if (downloading || checking) return;
+    if (installing.current || downloading || checking) return;
+    installing.current = true;
     setError(''); setProgress(-1);
     const previous = phase;
     let listener: Awaited<ReturnType<typeof AppUpdater.addListener>> | undefined;
@@ -44,7 +46,7 @@ export function NotificationCenter() {
         ? await AppUpdater.installDownloaded() : await AppUpdater.downloadAndInstall();
       setPhase(result.status === 'permissionRequired' ? 'permission' : 'installer');
     } catch (error) { setPhase('idle'); setError(errorMessage(error)); }
-    finally { await listener?.remove(); }
+    finally { installing.current = false; try { await listener?.remove(); } catch { /* Listener may already have been released by the native bridge. */ } }
   };
   const available = !!info?.available;
   return <>

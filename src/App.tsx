@@ -11,9 +11,12 @@ import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
 import { Brand } from './components/Brand';
 import { PageHeading } from './components/PageHeading';
+import { PullToRefresh } from './components/PullToRefresh';
+import { ConnectionStatus } from './components/ConnectionStatus';
+import { MediaImage } from './components/MediaImage';
 import { NotificationCenter } from './components/NotificationCenter';
 import { Dialog } from './components/Dialog';
-import { ArrowRight, RefreshCw, MapPin, Search, Moon, Sun, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { ArrowRight, MapPin, Search, Moon, Sun, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 function App() {
   const { posts, activeTab, currentUser, selectedUser, setSelectedUser, setActiveTab, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl, notice, dismissNotice, dataError, refreshData, isRefreshing, theme, toggleTheme } = useApp();
@@ -43,21 +46,22 @@ function App() {
           </div>
         </header>
         <main id="main-content" className="app-content">
+          <ConnectionStatus />
           {retry}
-          {activeTab === 'feed' && <>
-            <PageHeading title="Seu próximo destino começa aqui" description="Experiências reais de quem esteve lá." action={<button className="icon-button" aria-label="Atualizar relatos" onClick={() => void refreshData()} disabled={isRefreshing}><RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} /></button>} />
+          {activeTab === 'feed' && <PullToRefresh onRefresh={refreshData} isRefreshing={isRefreshing}>
+            <PageHeading title="Seu próximo destino começa aqui" description="Experiências reais de quem esteve lá." />
             <div className="segmented-control feed-filter" aria-label="Filtrar relatos"><button aria-pressed={feedType === 'global'} onClick={() => setFeedType('global')}>Explorar</button><button aria-pressed={feedType === 'following'} onClick={() => setFeedType('following')}>Seguindo</button></div>
             <div className="post-list">{displayedPosts.map(post => <PostCard key={post.id} post={post} />)}</div>
             {!displayedPosts.length && <div className="empty-state"><MapPin size={32} /><h2>{feedType === 'following' ? 'Seu círculo começa com uma descoberta' : 'O primeiro relato pode ser seu'}</h2><p>{feedType === 'following' ? 'Encontre pessoas na busca e siga os diários que combinam com você.' : 'Conte uma experiência e ajude outras pessoas a escolher sua próxima parada.'}</p><button className="btn-primary" onClick={() => feedType === 'following' ? setActiveTab('search') : setActiveTab('create')}>{feedType === 'following' ? 'Encontrar pessoas' : 'Criar meu primeiro relato'}<ArrowRight size={16} /></button></div>}
-          </>}
-          <NewPostPage active={activeTab === 'create'} />
+          </PullToRefresh>}
+          <NewPostPage key={"draft:" + currentUser.id} active={activeTab === 'create'} />
           {activeTab === 'search' && <SearchView />}
-          {activeTab === 'profile' && selectedUser && <UserProfile key={selectedUser.id} user={selectedUser} onNewPost={() => setActiveTab('create')} />}
+          {activeTab === 'profile' && selectedUser && <UserProfile key={"profile:" + selectedUser.id} user={selectedUser} onNewPost={() => setActiveTab('create')} />}
         </main>
       </div>
       <BottomNav onOpenNewPost={() => setActiveTab('create')} />
       <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
-      <Dialog open={!!expandedPhotoUrl} onClose={() => setExpandedPhotoUrl(null)} title="Foto do relato" className="photo-dialog">{expandedPhotoUrl && <img src={expandedPhotoUrl} alt="Foto do relato ampliada" />}</Dialog>
+      <Dialog open={!!expandedPhotoUrl} onClose={() => setExpandedPhotoUrl(null)} title="Foto do relato" className="photo-dialog">{expandedPhotoUrl && <MediaImage src={expandedPhotoUrl} alt="Foto do relato ampliada" />}</Dialog>
       {feedback}
     </div>
   );

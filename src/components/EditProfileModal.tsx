@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../context/appState';
 import { Camera, Check, LoaderCircle } from 'lucide-react';
 import { Dialog } from './Dialog';
@@ -15,10 +15,13 @@ export function EditProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose
   const [error, setError] = useState('');
   const files = useMemo(() => [avatar,banner].filter((file): file is File => !!file), [avatar,banner]);
   const urls = useObjectUrls(files);
+  const profile = useRef(currentUser);
+  profile.current = currentUser;
   useEffect(() => {
-    if (!isOpen || !currentUser) return;
-    setDisplayName(currentUser.displayName); setBio(currentUser.bio); setAvatar(undefined); setBanner(undefined); setError('');
-  }, [isOpen, currentUser]);
+    const user = profile.current;
+    if (!isOpen || !user) return;
+    setDisplayName(user.displayName); setBio(user.bio); setAvatar(undefined); setBanner(undefined); setError('');
+  }, [isOpen, currentUser?.id]);
   const chooseImage = (event: React.ChangeEvent<HTMLInputElement>, target: 'avatar' | 'banner') => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -28,7 +31,8 @@ export function EditProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose
   };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (submitting || !displayName.trim()) return;
+    if (submitting) return;
+    if (!displayName.trim()) { setError('Informe como você quer aparecer no Trip.'); document.getElementById('profile-name')?.focus(); return; }
     setSubmitting(true); setError('');
     try { await updateProfile(displayName.trim(),bio.trim(),avatar,banner); onClose(); notify('Seu perfil foi atualizado.'); }
     catch (err) { setError(errorMessage(err)); } finally { setSubmitting(false); }
@@ -39,10 +43,10 @@ export function EditProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose
     <form className="dialog-content trip-form" onSubmit={submit}>
       <div className="edit-cover"><img src={bannerUrl} alt="Prévia da capa" /><label className="upload-button"><Camera size={17} /> Alterar capa<input type="file" aria-label="Alterar foto de capa" accept="image/jpeg,image/png,image/webp" disabled={submitting} onChange={event => chooseImage(event,'banner')} /></label></div>
       <div className="edit-avatar-row"><img src={avatarUrl} alt="Prévia da foto de perfil" /><div><strong>Foto de perfil</strong><label className="upload-button"><Camera size={16} /> Escolher foto<input type="file" aria-label="Alterar foto de perfil" accept="image/jpeg,image/png,image/webp" disabled={submitting} onChange={event => chooseImage(event,'avatar')} /></label></div></div>
-      <div className="form-field"><label htmlFor="profile-name">Nome de exibição</label><input id="profile-name" autoComplete="name" required maxLength={60} value={displayName} disabled={submitting} onChange={event => setDisplayName(event.target.value)} /></div>
-      <div className="form-field"><label htmlFor="profile-bio">Sobre você</label><textarea id="profile-bio" rows={3} maxLength={300} value={bio} disabled={submitting} placeholder="Que lugares e sabores movem você?" onChange={event => setBio(event.target.value)} /><span className="field-hint">{bio.length}/300 caracteres</span></div>
+      <div className="form-field"><label htmlFor="profile-name">Nome de exibição</label><input id="profile-name" name="name" autoComplete="name" required maxLength={60} value={displayName} disabled={submitting} onChange={event => setDisplayName(event.target.value)} /></div>
+      <div className="form-field"><label htmlFor="profile-bio">Sobre você</label><textarea id="profile-bio" name="bio" aria-describedby="profile-bio-hint" rows={3} maxLength={300} value={bio} disabled={submitting} placeholder="Que lugares e sabores movem você?" onChange={event => setBio(event.target.value)} /><span id="profile-bio-hint" className="field-hint">{bio.length}/300 caracteres</span></div>
       {error && <p role="alert" className="form-error">{error}</p>}
-      <div className="dialog-actions"><button type="button" className="btn-secondary" disabled={submitting} onClick={onClose}>Cancelar</button><button type="submit" className="btn-primary" disabled={submitting || !displayName.trim()}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}{submitting ? 'Salvando…' : 'Salvar alterações'}</button></div>
+      <div className="dialog-actions"><button type="button" className="btn-secondary" disabled={submitting} onClick={onClose}>Cancelar</button><button type="submit" className="btn-primary" disabled={submitting}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Check size={18} />}{submitting ? 'Salvando…' : 'Salvar alterações'}</button></div>
     </form>
   </Dialog>;
 }

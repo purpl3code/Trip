@@ -4,6 +4,7 @@ import { AppContext } from './appState';
 import type { Post, User, Comment } from '../mockData';
 import { mockPosts, mockUsers } from '../mockData';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { compressImage } from '../utils/imageCompressor';
 import { errorMessage } from '../utils/errors';
 
@@ -70,8 +71,8 @@ export interface AppContextType {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Theme State
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('trip_theme');
-    return (saved as 'dark' | 'light') || 'dark';
+    try { return localStorage.getItem('trip_theme') === 'light' ? 'light' : 'dark'; }
+    catch { return 'dark'; }
   });
 
   // UI state
@@ -89,7 +90,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [notice, setNotice] = useState<{ message: string; kind: 'success' | 'error' } | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -98,6 +99,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const invalidateRequests = useCallback(() => { requestId.current++; }, []);
   const authUserId = useRef<string | null>(null);
   const pendingActions = useRef(new Set<string>());
+  const refreshInFlight = useRef<{ userId: string; promise: Promise<void> } | null>(null);
   const notify = useCallback((message: string, kind: 'success' | 'error' = 'success') => setNotice({ message, kind }), []);
   const clearAuthFeedback = () => { setAuthError(null); setAuthMessage(null); };
   useEffect(() => {
@@ -114,7 +116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('trip_theme', theme);
+    try { localStorage.setItem('trip_theme', theme); } catch { /* The theme still works when device storage is restricted. */ }
 
     if (Capacitor.isNativePlatform()) {
       void SystemBars.setStyle({
@@ -123,7 +125,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Update <meta name="theme-color"> dynamically
-    const themeColor = theme === 'dark' ? '#0d1117' : '#f5f6f7';
+    const themeColor = theme === 'dark' ? '#0b1017' : '#edf1f6';
     const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
     if (metaThemeColors.length > 0) {
       metaThemeColors.forEach((m) => m.setAttribute('content', themeColor));
@@ -160,21 +162,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [users]);
 
   // Load all application datasets from Supabase
-  const loadData = useCallback(async function fetchData(currentUserId: string) {
+  const loadData = useCallback(async function fetchData(currentUserId: string, repairProfile = true) {
     const request = ++requestId.current;
     try {
-      // Fetch profiles
-      const { data: dbProfiles, error: profError } = await supabase
-        .from('profiles')
-        .select('*');
-      
+      // Independent reads share one network round trip window.
+      const [profilesResult, followsResult, postsResult] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('follows').select('*'),
+        supabase.from('posts').select('*, user:profiles!user_id(*), comments(*, user:profiles!user_id(*)), likes(user_id)').order('created_at', { ascending:false }),
+      ]);
+      const { data:dbProfiles, error:profError } = profilesResult;
+      const { data:dbFollows, error:followError } = followsResult;
+      const { data:dbPosts, error:postsError } = postsResult;
       if (profError) throw profError;
-
-      // Fetch follows
-      const { data: dbFollows, error: followError } = await supabase
-        .from('follows')
-        .select('*');
-      
       if (followError) throw followError;
 
       // Map DB profiles to UI User format
@@ -187,8 +187,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           id: prof.id,
-          username: prof.username,
-          displayName: prof.display_name,
+          username: prof.username || 'viajante',
+          displayName: prof.display_name || prof.username || 'Viajante',
           avatar: (prof.avatar_url && !prof.avatar_url.includes('photo-1535713875002-d1d0cf377fde')) ? prof.avatar_url : DEFAULT_AVATAR,
           banner: prof.banner_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
           bio: prof.bio || '',
@@ -205,8 +205,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // If RLS insert or email check left user profile missing in database, create it now!
       if (!activeProfile && isSupabaseConfigured) {
+        if (!repairProfile) throw new Error('Não foi possível carregar seu perfil. Tente entrar novamente.');
         const { data: { user: sbUser } } = await supabase.auth.getUser();
-        if (sbUser) {
+        if (sbUser && sbUser.id === currentUserId && authUserId.current === currentUserId) {
           const defaultUsername = sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || `user_${Date.now()}`;
           const defaultDisplayName = sbUser.user_metadata?.display_name || sbUser.email?.split('@')[0] || 'Novo Viajante';
           const defaultBio = sbUser.user_metadata?.bio || '';
@@ -224,7 +225,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           if (!insertError) {
             // Profile created successfully! Refetch data to sync
-            await fetchData(currentUserId);
+            await fetchData(currentUserId,false);
             return;
           } else {
             console.error('Failed to create user profile on login:', insertError.message);
@@ -236,12 +237,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(activeProfile);
       
       setSelectedUser(previous => uiUsers.find(user => user.id === previous?.id) || activeProfile);
-
-      // Fetch Posts, including user profiles, comments, and likes
-      const { data: dbPosts, error: postsError } = await supabase
-        .from('posts')
-        .select('*, user:profiles!user_id(*), comments(*, user:profiles!user_id(*)), likes(user_id)')
-        .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
 
@@ -276,8 +271,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             id: p.user_id, username: 'viajante', displayName: 'Viajante', avatar: DEFAULT_AVATAR,
             banner: '', bio: '', followersCount: 0, followingCount: 0, isFollowing: false,
           },
-          content: p.content,
-          location: p.location,
+          content: p.content || '',
+          location: p.location || '',
           rating: p.rating,
           verdict: p.verdict,
           photos: p.photos || [],
@@ -309,7 +304,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, nextSession: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       if (!active) return;
       setSession(nextSession);
       const id = nextSession?.user?.id || null;
@@ -339,11 +334,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [loadData, invalidateRequests]);
 
   const refreshData = async () => {
-    if (isSupabaseConfigured && session?.user) {
-      setIsRefreshing(true);
-      try { await loadData(session.user.id); }
-      finally { setIsRefreshing(false); }
-    }
+    const userId = session?.user?.id;
+    if (!isSupabaseConfigured || !userId) return;
+    const running = refreshInFlight.current;
+    if (running && running.userId === userId) return running.promise;
+    setIsRefreshing(true);
+    const promise = loadData(userId).finally(() => {
+      if (refreshInFlight.current?.promise === promise) {
+        refreshInFlight.current = null;
+        setIsRefreshing(false);
+      }
+    });
+    refreshInFlight.current = { userId, promise };
+    return promise;
   };
 
   // Auth - Sign In
@@ -380,6 +383,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('Supabase is not configured. Register your credentials in .env.');
       }
       
+      if (!displayName.trim() || displayName.length > 60 || bio.length > 300) throw new Error('Confira seu nome e o limite de 300 caracteres da bio.');
       // 1. Check if username is already taken
       username = username.trim().toLowerCase();
       displayName = displayName.trim();
@@ -446,7 +450,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
 
     if (!content.trim() || !location.trim()) throw new Error('Informe o local e conte sua experiência.');
-    if (rating < 1 || rating > 5) throw new Error('Escolha uma nota de 1 a 5.');
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('Escolha uma nota de 1 a 5.');
+    if (content.length > 5000 || location.length > 120 || (photoFiles?.length || 0) + presetPhotos.length > 8) throw new Error('Confira o tamanho do relato e o limite de 8 fotos.');
     content = content.trim();
     location = location.trim();
     try {
@@ -566,6 +571,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
 
+    if (!content.trim() || content.length > 2000) throw new Error('Escreva um comentário com até 2000 caracteres.');
+    if (rating !== undefined && (!Number.isInteger(rating) || rating < 1 || rating > 5)) throw new Error('Escolha uma nota de 1 a 5.');
+    content = content.trim();
     try {
       if (isSupabaseConfigured) {
         const { error } = await supabase.from('comments').insert({
@@ -610,7 +618,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleLike = async (postId: string) => {
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
 
-    const actionKey = 'like:' + postId;
+    const actionKey = currentUser.id + ':like:' + postId;
     if (pendingActions.current.has(actionKey)) return;
     const matchedPost = posts.find((p) => p.id === postId);
     if (!matchedPost) return;
@@ -660,7 +668,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
 
     if (userId === currentUser.id) throw new Error('Você não pode seguir a própria conta.');
-    const actionKey = 'follow:' + userId;
+    const actionKey = currentUser.id + ':follow:' + userId;
     if (pendingActions.current.has(actionKey)) return;
     const matchedUser = users.find((u) => u.id === userId);
     if (!matchedUser) return;
@@ -726,6 +734,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
 
+    if (!displayName.trim() || displayName.length > 60 || bio.length > 300) throw new Error('Confira seu nome e o limite de 300 caracteres da bio.');
     try {
       let avatarUrl = currentUser.avatar;
       let bannerUrl = currentUser.banner;

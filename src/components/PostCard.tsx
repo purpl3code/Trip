@@ -4,6 +4,7 @@ import type { Post } from '../mockData';
 import { Heart, MessageCircle, MapPin, Star, ThumbsUp, ThumbsDown, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { CommentSection } from './CommentSection';
 import { Dialog } from './Dialog';
+import { MediaImage } from './MediaImage';
 import { averageRating, ratingValues } from '../utils/discovery';
 import { errorMessage } from '../utils/errors';
 
@@ -41,10 +42,10 @@ export function PostCard({ post }: { post: Post }) {
     </header>
     {post.photos.length > 0 && <div className="post-photos">
       <div className="post-photo-frame">
-        <button className="post-photo-open" aria-label={`Ampliar foto ${activeIndex + 1} de ${post.location}`} onClick={() => setExpandedPhotoUrl(post.photos[activeIndex])}><img src={post.photos[activeIndex]} alt={`Foto de ${post.location}`} loading="lazy" /></button>
+        <button className="post-photo-open" aria-label={`Ampliar foto ${activeIndex + 1} de ${post.location}`} onClick={() => setExpandedPhotoUrl(post.photos[activeIndex])}><MediaImage src={post.photos[activeIndex]} alt={`Foto de ${post.location}`} loading="lazy" /></button>
         {post.photos.length > 1 && <><span className="photo-counter">{activeIndex + 1} / {post.photos.length}</span><button className="photo-arrow previous" aria-label="Foto anterior" onClick={() => setPhotoIndex((activeIndex + post.photos.length - 1) % post.photos.length)}><ChevronLeft size={21} /></button><button className="photo-arrow next" aria-label="Próxima foto" onClick={() => setPhotoIndex((activeIndex + 1) % post.photos.length)}><ChevronRight size={21} /></button></>}
       </div>
-      {post.photos.length > 1 && <div className="photo-thumbnails">{post.photos.map((photo,index) => <button key={photo + index} aria-label={`Ver foto ${index + 1}`} aria-pressed={activeIndex === index} onClick={() => setPhotoIndex(index)}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
+      {post.photos.length > 1 && <div className="photo-thumbnails">{post.photos.map((photo,index) => <button key={photo + index} aria-label={`Ver foto ${index + 1}`} aria-pressed={activeIndex === index} onClick={() => setPhotoIndex(index)}><MediaImage src={photo} alt="" loading="lazy" /></button>)}</div>}
     </div>}
     <div className="post-location"><div><MapPin size={16} /><h2>{post.location}</h2></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><Star size={14} fill="currentColor" />{average}</span></div>
     <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span></div>

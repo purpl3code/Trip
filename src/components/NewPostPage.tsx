@@ -3,15 +3,18 @@ import { useApp } from '../context/appState';
 import { PageHeading } from './PageHeading';
 import { Star, ThumbsUp, ThumbsDown, ImagePlus, X, Crop, Send, LoaderCircle } from 'lucide-react';
 import { useObjectUrls } from '../hooks/useObjectUrls';
+import { usePostDraft } from '../hooks/usePostDraft';
 import { errorMessage } from '../utils/errors';
 
 export function NewPostPage({ active }: { active: boolean }) {
-  const { addPost, notify, setActiveTab } = useApp();
-  const [content, setContent] = useState('');
-  const [location, setLocation] = useState('');
-  const [rating, setRating] = useState(5);
-  const [verdict, setVerdict] = useState<'Gostei' | 'Não gostei'>('Gostei');
-  const [files, setFiles] = useState<File[]>([]);
+  const { addPost, notify, setActiveTab, currentUser } = useApp();
+  const { draft, setField, clearDraft, ready, saveState } = usePostDraft(currentUser!.id);
+  const { content, location, rating, verdict, files } = draft;
+  const setContent = (value: string) => setField('content',value);
+  const setLocation = (value: string) => setField('location',value);
+  const setRating = (value: number) => setField('rating',value);
+  const setVerdict = (value: 'Gostei' | 'Não gostei') => setField('verdict',value);
+  const setFiles = (value: File[] | ((previous: File[]) => File[])) => setField('files',value);
   const urls = useObjectUrls(files);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +22,7 @@ export function NewPostPage({ active }: { active: boolean }) {
   const [cropOffset, setCropOffset] = useState(.5);
   const [landscape, setLandscape] = useState(true);
   const [cropping, setCropping] = useState(false);
-  const busy = submitting || cropping;
+  const busy = submitting || cropping || !ready;
   useEffect(() => {
     if (active) document.getElementById('new-post-title')?.focus({ preventScroll: true });
   }, [active]);
@@ -34,10 +37,11 @@ export function NewPostPage({ active }: { active: boolean }) {
     event.preventDefault();
     if (submitting) return;
     if (!location.trim() || !content.trim()) { setError("Preencha o local e conte como foi a experiência."); document.getElementById(!location.trim() ? "post-location" : "post-content")?.focus(); return; }
+    if (!navigator.onLine) { setError('Você está sem conexão. Seu rascunho está guardado; conecte-se para publicar.'); return; }
     setSubmitting(true); setError('');
     try {
       await addPost(content.trim(), location.trim(), rating, verdict, [], files);
-      setContent(''); setLocation(''); setRating(5); setVerdict('Gostei'); setFiles([]);
+      await clearDraft();
       setActiveTab('feed'); notify('Sua descoberta foi publicada!');
     } catch (err) { setError(errorMessage(err)); } finally { setSubmitting(false); }
   };
@@ -49,13 +53,15 @@ export function NewPostPage({ active }: { active: boolean }) {
       await new Promise<void>((resolve,reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error('Não foi possível abrir a foto.')); image.src = urls[cropIndex]; });
       const canvas = document.createElement('canvas');
       const size = Math.min(image.width,image.height);
-      canvas.width = size; canvas.height = size;
+      const outputSize = Math.min(size,1600);
+      canvas.width = outputSize; canvas.height = outputSize;
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Não foi possível recortar a foto.');
-      context.drawImage(image, (image.width-size)*cropOffset, (image.height-size)*cropOffset, size,size,0,0,size,size);
-      const blob = await new Promise<Blob>((resolve,reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Não foi possível salvar o corte.')), 'image/png'));
+      context.fillStyle = "#ffffff"; context.fillRect(0,0,outputSize,outputSize);
+      context.drawImage(image, (image.width-size)*cropOffset, (image.height-size)*cropOffset, size,size,0,0,outputSize,outputSize);
+      const blob = await new Promise<Blob>((resolve,reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Não foi possível salvar o corte.')), 'image/jpeg',.9));
       const index = cropIndex;
-      setFiles(previous => previous.map((file,i) => i === index ? new File([blob], 'foto-recortada.png', { type:'image/png' }) : file));
+      setFiles(previous => previous.map((file,i) => i === index ? new File([blob], 'foto-recortada.jpg', { type:'image/jpeg' }) : file));
       setCropIndex(null);
     } catch (err) { setError(errorMessage(err)); } finally { setCropping(false); }
   };
@@ -70,7 +76,7 @@ export function NewPostPage({ active }: { active: boolean }) {
       <div className="photo-upload-heading"><div><strong>Fotos da descoberta</strong><p>Até 8 fotos · JPG, PNG ou WebP · 10 MB cada</p></div><label className="upload-button"><ImagePlus size={18} /><span>Adicionar</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} aria-label="Adicionar fotos ao relato" onChange={selectFiles} /></label></div>
       {files.length > 0 && <div className="upload-previews">{files.map((file,index) => <div key={index}><img src={urls[index]} alt={`Prévia da foto ${index+1}: ${file.name}`} onLoad={event => { if (cropIndex === index) setLandscape(event.currentTarget.naturalWidth >= event.currentTarget.naturalHeight); }} /><button type="button" className="preview-remove" disabled={busy} aria-label={`Remover foto ${index+1}`} onClick={() => setFiles(previous => previous.filter((_,i) => i !== index))}><X size={16} /></button><button type="button" className="preview-crop" disabled={busy} aria-label={`Recortar foto ${index+1}`} onClick={() => { const image = new Image(); image.onload = () => setLandscape(image.width >= image.height); image.src = urls[index]; setCropIndex(index); setCropOffset(.5); }}><Crop size={13} /> Recortar</button></div>)}</div>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="form-submit"><span id="post-draft-hint">Seu rascunho é mantido ao trocar de aba.</span><button type="submit" className="btn-primary" disabled={busy}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{submitting ? 'Publicando…' : 'Publicar relato'}</button></div>
+      <div className="form-submit"><span id="post-draft-hint">{!ready ? 'Abrindo seu rascunho…' : saveState === 'saving' ? 'Salvando rascunho…' : saveState === 'error' ? 'Rascunho mantido nesta sessão. O armazenamento do aparelho está indisponível.' : 'Rascunho salvo neste aparelho, incluindo suas fotos.'}</span><button type="submit" className="btn-primary" disabled={busy}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{submitting ? 'Publicando…' : 'Publicar relato'}</button></div>
     </form>}
   </section>;
 }
