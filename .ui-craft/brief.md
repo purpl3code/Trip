@@ -35,3 +35,27 @@ Detalhe de identidade: seleção de aba somente com ícone/texto em âmbar, sem 
 - Blur concentrado no cabeçalho, navegação e diálogos; cartões usam material leve para rolagem fluida.
 - Fotos e relatos continuam sendo o foco; sem novas seções decorativas.
 - Contraste, modo de movimento reduzido e alternativa sem transparência são parte da entrega.
+
+## Ajustes após a 2.0
+- Feed sem filtro Explorar/Seguindo: mostrar todos os relatos diretamente abaixo do título.
+- Barra inferior compacta: cerca de 20% menor em altura, preservando 44 px de toque e as quatro colunas alinhadas.
+
+- Barra inferior também cerca de 20% mais estreita e centralizada, mantendo quatro alvos de toque iguais.
+
+- Avaliações integradas ao feed: sem caixa elevada, fundo de vidro, sombra ou contorno arredondado; separação por divisórias discretas.
+
+- Feed sem título/subtítulo visíveis; cabeçalho com sino e tema, sem avatar. Data de publicação abaixo da foto, junto ao resumo da avaliação.
+
+- Ações dos relatos alinhadas à margem do texto, com menor espaço vertical; “Continuar lendo” e “Ler menos” aparecem no próprio parágrafo.
+
+- Descrições recolhidas têm no máximo três linhas, incluindo o link de leitura. Ajustar pela largura e fonte reais, encerrando em palavra completa.
+
+- Perfil integrado à página, sem caixa elevada: sem fundo, borda ou sombra externos; capa independente e informações alinhadas ao conteúdo.
+
+- Fotos ampliadas em tela cheia, fundo escuro e X no canto superior, sem moldura/cartão de popup. Preservar proporção da foto e áreas seguras do botão.
+
+- Página Relatar com formulário integrado ao conteúdo, sem cartão externo elevado, fundo, borda ou sombra.
+
+- Busca sem título/subtítulo introdutórios. Avaliação nos comentários com estrelas e nota alinhadas, dois vereditos iguais e campo de texto em largura total; envio em linha própria.
+
+- Banner do perfil preenche todo o bloco de apresentação, com informações sobre a foto e degradê escuro para leitura nos dois temas.

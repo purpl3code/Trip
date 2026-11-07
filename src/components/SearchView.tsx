@@ -3,7 +3,7 @@ import { useApp } from '../context/appState';
 import { PostCard } from './PostCard';
 import { LocationCard } from './LocationCard';
 import { PageHeading } from './PageHeading';
-import { Search, Users, ArrowLeft, X, UserPlus, UserCheck } from 'lucide-react';
+import { Search, ArrowLeft, X, UserPlus, UserCheck } from 'lucide-react';
 import type { User } from '../mockData';
 import { normalizeSearch, groupLocations } from '../utils/discovery';
 import { errorMessage } from '../utils/errors';
@@ -13,7 +13,7 @@ export function SearchView() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'locations' | 'posts' | 'people'>('all');
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<Set<string>>(() => new Set());
   useEffect(() => { window.scrollTo({ top:0, behavior:'instant' }); },[selectedLocation]);
   const clean = normalizeSearch(query);
   const locations = groupLocations(posts);
@@ -26,8 +26,8 @@ export function SearchView() {
   const empty = !(visibleLocations && matchedLocations.length || visiblePeople && matchedPeople.length || visiblePosts && matchedPosts.length);
   const openUser = (user: User) => { setSelectedUser(user); setActiveTab('profile'); };
   const follow = async (user: User) => {
-    setPending(user.id);
-    try { await toggleFollow(user.id); } catch (error) { notify(errorMessage(error), 'error'); } finally { setPending(null); }
+    setPending(previous => new Set(previous).add(user.id));
+    try { await toggleFollow(user.id); } catch (error) { notify(errorMessage(error), 'error'); } finally { setPending(previous => { const next = new Set(previous); next.delete(user.id); return next; }); }
   };
   const locationPosts = selectedLocation ? posts.filter(post => normalizeSearch(post.location) === selectedLocation) : [];
   const locationName = locations.find(location => normalizeSearch(location.name) === selectedLocation)?.name;
@@ -39,14 +39,12 @@ export function SearchView() {
   </section>;
 
   return <section className="search-page">
-    <PageHeading title="Qual é a próxima parada?" description="Lugares, sabores e pessoas com histórias para contar." />
+    <h1 className="sr-only">Buscar lugares, relatos e pessoas</h1>
     <div className="search-input"><Search size={20} aria-hidden="true" /><input autoComplete="off" type="search" aria-label="Buscar lugares, relatos ou pessoas" placeholder="Busque um lugar, uma comida ou alguém" value={query} onChange={event => setQuery(event.target.value)} />{query && <button className="icon-button" aria-label="Limpar busca" onClick={() => setQuery('')}><X size={18} /></button>}</div>
     <div className="segmented-control search-filters" aria-label="Filtrar resultados">{([['all','Tudo'],['locations','Lugares'],['posts','Relatos'],['people','Pessoas']] as const).map(([id,label]) => <button key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
-    {!clean && <div className="discovery-intro"><CompassIllustration /><div><h2>Boas descobertas estão por perto.</h2><p>Explore os lugares da comunidade ou encontre alguém para acompanhar.</p></div></div>}
     {visibleLocations && matchedLocations.length > 0 && <div><div className="section-heading"><h2>{clean ? 'Lugares encontrados' : 'Lugares da comunidade'}</h2><span>{matchedLocations.length}</span></div><div className="location-grid">{matchedLocations.map(location => <LocationCard key={location.name} location={location} onOpen={() => setSelectedLocation(normalizeSearch(location.name))} />)}</div></div>}
-    {visiblePeople && matchedPeople.length > 0 && <div><div className="section-heading"><h2>{clean ? 'Pessoas encontradas' : 'Diários para acompanhar'}</h2><span>{matchedPeople.length}</span></div><div className="people-list">{matchedPeople.map(user => <div className="person-card" key={user.id}><button className="person-info" onClick={() => openUser(user)}><img src={user.avatar} alt="" /><div><strong>{user.displayName}</strong><span>@{user.username}</span></div></button>{user.id !== currentUser?.id && <button className={user.isFollowing ? 'btn-secondary follow-button' : 'btn-primary follow-button'} disabled={pending !== null} aria-pressed={user.isFollowing} onClick={() => void follow(user)}>{user.isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}{pending === user.id ? 'Aguarde…' : user.isFollowing ? 'Seguindo' : 'Seguir'}</button>}</div>)}</div></div>}
+    {visiblePeople && matchedPeople.length > 0 && <div><div className="section-heading"><h2>{clean ? 'Pessoas encontradas' : 'Diários para acompanhar'}</h2><span>{matchedPeople.length}</span></div><div className="people-list">{matchedPeople.map(user => <div className="person-card" key={user.id}><button className="person-info" onClick={() => openUser(user)}><img src={user.avatar} alt="" /><div><strong>{user.displayName}</strong><span>@{user.username}</span></div></button>{user.id !== currentUser?.id && <button className={user.isFollowing ? 'btn-secondary follow-button' : 'btn-primary follow-button'} disabled={pending.has(user.id)} aria-busy={pending.has(user.id)} aria-pressed={user.isFollowing} onClick={() => void follow(user)}>{user.isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}{user.isFollowing ? 'Seguindo' : 'Seguir'}</button>}</div>)}</div></div>}
     {visiblePosts && clean && matchedPosts.length > 0 && <div><div className="section-heading"><h2>Relatos encontrados</h2><span>{matchedPosts.length}</span></div><div className="post-list">{matchedPosts.map(post => <PostCard key={post.id} post={post} />)}</div></div>}
     {(empty || (!clean && filter === 'posts')) && <div className="empty-state"><Search size={32} /><h2>{!clean ? 'Encontre uma experiência' : 'Ainda não encontramos por aqui'}</h2><p>{!clean ? 'Digite um local, uma comida ou uma palavra do relato para começar.' : 'Tente outro termo ou mude o filtro da busca.'}</p>{clean && <button className="btn-secondary" onClick={() => { setQuery(''); setFilter('all'); }}>Limpar filtros</button>}</div>}
   </section>;
 }
-function CompassIllustration() { return <div className="discovery-icon"><Users size={28} /></div>; }

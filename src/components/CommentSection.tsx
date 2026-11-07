@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useApp } from '../context/appState';
 import type { Post } from '../mockData';
-import { Star, Send, LoaderCircle } from 'lucide-react';
+import { Send, LoaderCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { RatingStar } from './RatingStar';
+import { StarRating } from './StarRating';
 import { errorMessage } from '../utils/errors';
 
 export function CommentSection({ post }: { post: Post }) {
   const { addComment, setSelectedUser, setActiveTab } = useApp();
+  const commentId = useId();
+  const hintId = useId();
   const [content, setContent] = useState('');
   const [hasRating, setHasRating] = useState(false);
   const [rating, setRating] = useState(5);
@@ -22,13 +26,25 @@ export function CommentSection({ post }: { post: Post }) {
     } catch (err) { setError(errorMessage(err)); } finally { setSubmitting(false); }
   };
   return <section className="comments-section" aria-label="Conversa sobre o relato">
-    <h3>Sobre essa descoberta</h3>
-    <div className="comments-list">{post.comments.map(comment => <article className="comment" key={comment.id}><header><button onClick={() => { setSelectedUser(comment.user); setActiveTab('profile'); }}><img src={comment.user.avatar} alt="" /><div><strong>{comment.user.displayName}</strong><span>@{comment.user.username}</span></div></button>{comment.rating !== undefined && <span className="rating-badge"><Star size={12} fill="currentColor" />{comment.rating}</span>}</header><p>{comment.content}</p><time dateTime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</time></article>)}</div>
-    {!post.comments.length && <p className="muted">Essa conversa pode começar com você.</p>}
-    <form onSubmit={submit}>
-      <button type="button" className="text-button" aria-pressed={hasRating} disabled={submitting} onClick={() => setHasRating(!hasRating)}>{hasRating ? 'Remover minha avaliação' : '+ Também quero avaliar o local'}</button>
-      {hasRating && <div className="comment-rating"><div className="star-picker" aria-label="Sua avaliação">{[1,2,3,4,5].map(star => <button type="button" key={star} disabled={submitting} aria-label={`${star} ${star === 1 ? 'estrela' : 'estrelas'}`} aria-pressed={rating === star} onClick={() => setRating(star)}><Star size={21} fill={star <= rating ? 'currentColor' : 'none'} /></button>)}</div><select aria-label="Veredito da avaliação" disabled={submitting} value={verdict} onChange={event => setVerdict(event.target.value as typeof verdict)}><option>Gostei</option><option>Não gostei</option></select></div>}
-      <div className="comment-input"><textarea name="comment" aria-label="Seu comentário" placeholder="Compartilhe sua opinião…" required maxLength={2000} rows={2} value={content} disabled={submitting} onChange={event => setContent(event.target.value)} /><button className="btn-primary" type="submit" aria-label="Enviar comentário" disabled={submitting || !content.trim()}>{submitting ? <LoaderCircle size={19} className="animate-spin" /> : <Send size={19} />}</button></div>
+    <div className="comments-list">{post.comments.map(comment => <article className="comment" key={comment.id}><header><button onClick={() => { setSelectedUser(comment.user); setActiveTab('profile'); }}><img src={comment.user.avatar} alt="" /><div><strong>{comment.user.displayName}</strong><span>@{comment.user.username}</span></div></button>{comment.rating !== undefined && <span className="rating-badge"><RatingStar size={14} />{comment.rating}</span>}</header><p>{comment.content}</p><time dateTime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</time></article>)}</div>
+    <form className="comment-form" onSubmit={submit} aria-busy={submitting}>
+      <div className="comment-form-heading">
+        <label className="comment-label" htmlFor={commentId}>Seu comentário</label>
+        <button type="button" className="text-button" aria-pressed={hasRating} disabled={submitting} onClick={() => setHasRating(value => !value)}>{hasRating ? 'Remover avaliação' : '+ Avaliar o local'}</button>
+      </div>
+      {hasRating && <fieldset className="comment-rating">
+        <legend>Sua avaliação do local</legend>
+        <StarRating value={rating} onChange={setRating} disabled={submitting} label="Sua nota" />
+        <div className="verdict-picker">
+          <button type="button" disabled={submitting} aria-pressed={verdict === 'Gostei'} onClick={() => setVerdict('Gostei')}><ThumbsUp size={17} aria-hidden="true" />Gostei</button>
+          <button type="button" disabled={submitting} aria-pressed={verdict === 'Não gostei'} onClick={() => setVerdict('Não gostei')}><ThumbsDown size={17} aria-hidden="true" />Não gostei</button>
+        </div>
+      </fieldset>}
+      <div className="comment-input"><textarea id={commentId} name="comment" aria-describedby={hintId} placeholder="Compartilhe sua opinião…" required maxLength={2000} rows={3} value={content} disabled={submitting} onChange={event => setContent(event.target.value)} /></div>
+      <div className="comment-submit-row">
+        <span id={hintId} className="field-hint comment-character-count">{content.length}/2000 caracteres</span>
+        <button className="btn-primary" type="submit" aria-label="Enviar comentário" disabled={submitting || !content.trim()}>{submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} aria-hidden="true" />}{submitting ? 'Enviando…' : 'Enviar'}</button>
+      </div>
       {error && <p className="form-error" role="alert">{error}</p>}
     </form>
   </section>;

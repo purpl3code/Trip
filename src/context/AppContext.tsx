@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { compressImage } from '../utils/imageCompressor';
 import { errorMessage } from '../utils/errors';
+import { withLike, withFollow, withPostUsers, commitOptimistic, shouldOverlaySocialChange } from '../utils/socialUpdates';
 
 const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23cbd5e1"/><circle cx="12" cy="8" r="4" fill="%23ffffff"/><path d="M4 20c0-3 3-5 8-5s8 2 8 5" fill="%23ffffff"/></svg>';
 
@@ -99,6 +100,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const invalidateRequests = useCallback(() => { requestId.current++; }, []);
   const authUserId = useRef<string | null>(null);
   const pendingActions = useRef(new Set<string>());
+  const pendingLikes = useRef(new Map<string,{ actorId: string; liked: boolean; settledRequest?: number }>());
+  const pendingFollows = useRef(new Map<string,{ actorId: string; following: boolean; settledRequest?: number }>());
   const refreshInFlight = useRef<{ userId: string; promise: Promise<void> } | null>(null);
   const notify = useCallback((message: string, kind: 'success' | 'error' = 'success') => setNotice({ message, kind }), []);
   const clearAuthFeedback = () => { setAuthError(null); setAuthMessage(null); };
@@ -169,7 +172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const [profilesResult, followsResult, postsResult] = await Promise.all([
         supabase.from('profiles').select('*'),
         supabase.from('follows').select('*'),
-        supabase.from('posts').select('*, user:profiles!user_id(*), comments(*, user:profiles!user_id(*)), likes(user_id)').order('created_at', { ascending:false }),
+        supabase.from('posts').select('*, comments(*), likes(user_id)').order('created_at', { ascending:false }),
       ]);
       const { data:dbProfiles, error:profError } = profilesResult;
       const { data:dbFollows, error:followError } = followsResult;
@@ -178,7 +181,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (followError) throw followError;
 
       // Map DB profiles to UI User format
-      const uiUsers: User[] = (dbProfiles || []).map((prof: any) => {
+      let uiUsers: User[] = (dbProfiles || []).map((prof: any) => {
         const followers = (dbFollows || []).filter((f: any) => f.following_id === prof.id);
         const following = (dbFollows || []).filter((f: any) => f.follower_id === prof.id);
         const isFollowing = (dbFollows || []).some(
@@ -199,6 +202,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       if (request !== requestId.current || authUserId.current !== currentUserId) return;
+      // A refresh must not undo a tap whose write is still in flight.
+      for (const [targetId,change] of pendingFollows.current) {
+        if (change.actorId !== currentUserId) continue;
+        if (!shouldOverlaySocialChange(change,request)) { pendingFollows.current.delete(targetId); continue; }
+        const target = uiUsers.find(user => user.id === targetId);
+        if (!target) continue;
+        const delta = Number(change.following) - Number(target.isFollowing);
+        uiUsers = uiUsers.map(user => withFollow(user,currentUserId,targetId,change.following,delta));
+      }
       setUsers(uiUsers);
 
       const activeProfile = uiUsers.find((u) => u.id === currentUserId) || null;
@@ -284,7 +296,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       if (request !== requestId.current || authUserId.current !== currentUserId) return;
-      setPosts(uiPosts);
+      setPosts(uiPosts.map(post => {
+        const change = pendingLikes.current.get(post.id);
+        if (change?.actorId !== currentUserId) return post;
+        if (!shouldOverlaySocialChange(change,request)) { pendingLikes.current.delete(post.id); return post; }
+        return withLike(post,change.liked);
+      }));
       setDataError(null);
     } catch (e: unknown) {
       if (request !== requestId.current || authUserId.current !== currentUserId) return;
@@ -614,115 +631,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Toggle Like
+  // Update immediately; a failed write restores only the affected relationship.
   const toggleLike = async (postId: string) => {
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
-
-    const actionKey = currentUser.id + ':like:' + postId;
+    const actorId = currentUser.id;
+    const actionKey = actorId + ':like:' + postId;
     if (pendingActions.current.has(actionKey)) return;
-    const matchedPost = posts.find((p) => p.id === postId);
-    if (!matchedPost) return;
+    const post = posts.find(item => item.id === postId);
+    if (!post) return;
+    const previous = !!post.isLiked;
+    const liked = !previous;
     pendingActions.current.add(actionKey);
-
+    pendingLikes.current.set(postId,{actorId,liked});
     try {
-      if (isSupabaseConfigured) {
-        if (matchedPost.isLiked) {
-          const { error } = await supabase
-            .from('likes')
-            .delete()
-            .eq('post_id', postId)
-            .eq('user_id', currentUser.id);
-
+      await commitOptimistic({
+        apply: () => setPosts(items => items.map(item => item.id === postId ? withLike(item,liked) : item)),
+        persist: async () => {
+          if (!isSupabaseConfigured) return;
+          const {error} = previous
+            ? await supabase.from('likes').delete().eq('post_id',postId).eq('user_id',actorId)
+            : await supabase.from('likes').insert({post_id:postId,user_id:actorId});
           if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('likes')
-            .insert({ post_id: postId, user_id: currentUser.id });
-
-          if (error) throw error;
-        }
-        await loadData(currentUser.id);
-      } else {
-        // Fallback: offline memory state
-        setPosts((prevPosts) =>
-          prevPosts.map((post) => {
-            if (post.id === postId) {
-              const isLiked = !post.isLiked;
-              return {
-                ...post,
-                isLiked,
-                likesCount: isLiked ? post.likesCount + 1 : post.likesCount - 1,
-              };
-            }
-            return post;
-          })
-        );
-      }
-    } catch (e: any) {
-      throw new Error(errorMessage(e));
-    } finally { pendingActions.current.delete(actionKey); }
+        },
+        rollback: () => {
+          if (!isSupabaseConfigured || authUserId.current === actorId) {
+            const change = pendingLikes.current.get(postId);
+            if (change?.actorId === actorId) change.liked = previous;
+            setPosts(items => items.map(item => item.id === postId ? withLike(item,previous) : item));
+          }
+        },
+      });
+    } catch (error) { throw new Error(errorMessage(error)); }
+    finally {
+      const change = pendingLikes.current.get(postId);
+      if (change?.actorId === actorId) change.settledRequest = requestId.current;
+      pendingActions.current.delete(actionKey);
+    }
   };
 
-  // Toggle Follow
   const toggleFollow = async (userId: string) => {
     if (!currentUser) throw new Error('Entre na sua conta para continuar.');
-
-    if (userId === currentUser.id) throw new Error('Você não pode seguir a própria conta.');
-    const actionKey = currentUser.id + ':follow:' + userId;
+    const actorId = currentUser.id;
+    if (userId === actorId) throw new Error('Você não pode seguir a própria conta.');
+    const actionKey = actorId + ':follow:' + userId;
     if (pendingActions.current.has(actionKey)) return;
-    const matchedUser = users.find((u) => u.id === userId);
-    if (!matchedUser) return;
+    const target = users.find(user => user.id === userId);
+    if (!target) return;
+    const previous = target.isFollowing;
+    const following = !previous;
+    const delta = following ? 1 : -1;
+    const apply = (next: boolean,change: number) => {
+      const update = (user: User) => withFollow(user,actorId,userId,next,change);
+      setUsers(items => items.map(update));
+      setCurrentUser(user => user ? update(user) : null);
+      setSelectedUser(user => user ? update(user) : null);
+      setPosts(items => items.map(post => withPostUsers(post,update)));
+    };
     pendingActions.current.add(actionKey);
-
+    pendingFollows.current.set(userId,{actorId,following});
     try {
-      if (isSupabaseConfigured) {
-        if (matchedUser.isFollowing) {
-          const { error } = await supabase
-            .from('follows')
-            .delete()
-            .eq('follower_id', currentUser.id)
-            .eq('following_id', userId);
-
+      await commitOptimistic({
+        apply: () => apply(following,delta),
+        persist: async () => {
+          if (!isSupabaseConfigured) return;
+          const {error} = previous
+            ? await supabase.from('follows').delete().eq('follower_id',actorId).eq('following_id',userId)
+            : await supabase.from('follows').insert({follower_id:actorId,following_id:userId});
           if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('follows')
-            .insert({ follower_id: currentUser.id, following_id: userId });
-
-          if (error) throw error;
-        }
-        await loadData(currentUser.id);
-      } else {
-        // Fallback: offline memory state
-        setUsers((prevUsers) =>
-          prevUsers.map((user) => {
-            if (user.id === userId) {
-              const isFollowing = !user.isFollowing;
-              return {
-                ...user,
-                isFollowing,
-                followersCount: isFollowing ? user.followersCount + 1 : user.followersCount - 1,
-              };
-            }
-            return user;
-          })
-        );
-
-        if (selectedUser?.id === userId) {
-          setSelectedUser((prev) => {
-            if (!prev) return null;
-            const isFollowing = !prev.isFollowing;
-            return {
-              ...prev,
-              isFollowing,
-              followersCount: isFollowing ? prev.followersCount + 1 : prev.followersCount - 1,
-            };
-          });
-        }
-      }
-    } catch (e: any) {
-      throw new Error(errorMessage(e));
-    } finally { pendingActions.current.delete(actionKey); }
+        },
+        rollback: () => {
+          if (!isSupabaseConfigured || authUserId.current === actorId) {
+            const change = pendingFollows.current.get(userId);
+            if (change?.actorId === actorId) change.following = previous;
+            apply(previous,-delta);
+          }
+        },
+      });
+    } catch (error) { throw new Error(errorMessage(error)); }
+    finally {
+      const change = pendingFollows.current.get(userId);
+      if (change?.actorId === actorId) change.settledRequest = requestId.current;
+      pendingActions.current.delete(actionKey);
+    }
   };
 
   // Update Profile details and custom file uploads

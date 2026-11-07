@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useApp } from '../context/appState';
 import type { Post } from '../mockData';
-import { Heart, MessageCircle, MapPin, Star, ThumbsUp, ThumbsDown, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, ThumbsUp, ThumbsDown, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { CommentSection } from './CommentSection';
+import { PostDescription } from './PostDescription';
 import { Dialog } from './Dialog';
+import { RatingStar } from './RatingStar';
 import { MediaImage } from './MediaImage';
 import { averageRating, ratingValues } from '../utils/discovery';
 import { errorMessage } from '../utils/errors';
@@ -13,21 +15,20 @@ export function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [liking, setLiking] = useState(false);
+  const [likePulse, setLikePulse] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const [expanded, setExpanded] = useState(false);
   const ratings = ratingValues(post);
   const average = averageRating(ratings).toFixed(1);
   const date = new Date(post.createdAt);
   const formattedDate = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
   const activeIndex = Math.min(photoIndex, Math.max(0, post.photos.length - 1));
-  const longContent = post.content.length > 350;
-  const content = longContent && !expanded ? post.content.slice(0, 350).trimEnd() + '…' : post.content;
   const like = async () => {
     if (liking) return;
     setLiking(true);
-    try { await toggleLike(post.id); } catch (error) { notify(errorMessage(error), 'error'); } finally { setLiking(false); }
+    setLikePulse(previous => post.isLiked ? 0 : previous + 1);
+    try { await toggleLike(post.id); } catch (error) { setLikePulse(0); notify(errorMessage(error), 'error'); } finally { setLiking(false); }
   };
   const remove = async () => {
     setDeleting(true); setDeleteError('');
@@ -38,7 +39,7 @@ export function PostCard({ post }: { post: Post }) {
   return <article className={`post-card ${post.photos.length ? "has-photos" : ""}`}>
     <header className="post-header">
       <button className="post-author" onClick={() => { setSelectedUser(post.user); setActiveTab('profile'); }}><img src={post.user.avatar} alt="" /><div><strong>{post.user.displayName}</strong><span>@{post.user.username}</span></div></button>
-      <div className="post-meta"><time dateTime={post.createdAt} title={date.toLocaleString('pt-BR')}>{formattedDate}</time>{currentUser?.id === post.user.id && <button className="icon-button" aria-label="Excluir relato" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>}</div>
+      {currentUser?.id === post.user.id && <div className="post-meta"><button className="icon-button" aria-label="Excluir relato" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button></div>}
     </header>
     {post.photos.length > 0 && <div className="post-photos">
       <div className="post-photo-frame">
@@ -47,12 +48,11 @@ export function PostCard({ post }: { post: Post }) {
       </div>
       {post.photos.length > 1 && <div className="photo-thumbnails">{post.photos.map((photo,index) => <button key={photo + index} aria-label={`Ver foto ${index + 1}`} aria-pressed={activeIndex === index} onClick={() => setPhotoIndex(index)}><MediaImage src={photo} alt="" loading="lazy" /></button>)}</div>}
     </div>}
-    <div className="post-location"><div><MapPin size={16} /><h2>{post.location}</h2></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><Star size={14} fill="currentColor" />{average}</span></div>
-    <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span></div>
-    <p className="post-content">{content}</p>
-    {longContent && <button className="text-button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? 'Ler menos' : 'Continuar lendo'}</button>}
+    <div className="post-location"><div><MapPin size={16} /><h2>{post.location}</h2></div><span className="rating-badge" aria-label={`Nota média ${average} de 5`}><RatingStar size={16} />{average}</span></div>
+    <div className="post-verdict"><span className={post.verdict === 'Gostei' ? 'verdict-positive' : 'verdict-negative'}>{post.verdict === 'Gostei' ? <ThumbsUp size={12} /> : <ThumbsDown size={12} />}{post.verdict}</span><span>{ratings.length} {ratings.length === 1 ? 'avaliação' : 'avaliações'}</span><time className="post-date" dateTime={post.createdAt} title={date.toLocaleString('pt-BR')}>Publicado em {formattedDate}</time></div>
+    <PostDescription text={post.content} />
     <footer className="post-actions">
-      <button disabled={liking} aria-pressed={!!post.isLiked} aria-label={post.isLiked ? 'Descurtir relato' : 'Curtir relato'} className={post.isLiked ? 'liked' : ''} onClick={() => void like()}><Heart size={19} fill={post.isLiked ? 'currentColor' : 'none'} /><span>{post.likesCount}</span></button>
+      <button disabled={liking} aria-busy={liking} aria-pressed={!!post.isLiked} aria-label={post.isLiked ? 'Descurtir relato' : 'Curtir relato'} className={post.isLiked ? 'post-like liked' : 'post-like'} onClick={() => void like()}><span key={likePulse} className={likePulse ? 'like-icon is-pulsing' : 'like-icon'} aria-hidden="true"><Heart size={19} fill={post.isLiked ? 'currentColor' : 'none'} /></span><span>{post.likesCount}</span></button>
       <button aria-expanded={showComments} aria-label="Comentários do relato" onClick={() => setShowComments(!showComments)}><MessageCircle size={19} /><span>{post.comments.length}</span></button>
       <button className="post-reviews" aria-expanded={showComments} onClick={() => setShowComments(!showComments)}>{showComments ? 'Fechar conversa' : 'Ver conversa'}{showComments ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
     </footer>

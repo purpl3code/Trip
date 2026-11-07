@@ -10,9 +10,10 @@ interface DialogProps {
   busy?: boolean;
   children: ReactNode;
   className?: string;
+  backdropClassName?: string;
 }
 
-export function Dialog({ open, onClose, title, busy = false, children, className = '' }: DialogProps) {
+export function Dialog({ open, onClose, title, busy = false, children, className = '', backdropClassName = '' }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -58,7 +59,7 @@ export function Dialog({ open, onClose, title, busy = false, children, className
 
   if (!open) return null;
   return createPortal(
-    <div className="dialog-backdrop" onClick={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+    <div className={`dialog-backdrop ${backdropClassName}`} onClick={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} tabIndex={-1} className={`trip-dialog ${className}`}>
         <header className="dialog-header"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" aria-label="Fechar janela" disabled={busy} onClick={onClose}><X size={20} /></button></header>
         {children}

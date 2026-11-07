@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useApp } from './context/appState';
 import { Sidebar } from './components/Sidebar';
@@ -10,7 +10,6 @@ import { EditProfileModal } from './components/EditProfileModal';
 import { SearchView } from './components/SearchView';
 import { AuthView } from './components/AuthView';
 import { Brand } from './components/Brand';
-import { PageHeading } from './components/PageHeading';
 import { PullToRefresh } from './components/PullToRefresh';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { MediaImage } from './components/MediaImage';
@@ -19,8 +18,7 @@ import { Dialog } from './components/Dialog';
 import { ArrowRight, MapPin, Search, Moon, Sun, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 function App() {
-  const { posts, activeTab, currentUser, selectedUser, setSelectedUser, setActiveTab, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl, notice, dismissNotice, dataError, refreshData, isRefreshing, theme, toggleTheme } = useApp();
-  const [feedType, setFeedType] = useState<'global' | 'following'>('global');
+  const { posts, activeTab, currentUser, selectedUser, setActiveTab, isSessionLoading, isEditProfileOpen, setIsEditProfileOpen, expandedPhotoUrl, setExpandedPhotoUrl, notice, dismissNotice, dataError, refreshData, isRefreshing, theme, toggleTheme } = useApp();
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [activeTab, selectedUser?.id]);
 
   const feedback = notice && <div className={`trip-toast ${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.kind === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}<span>{notice.message}</span><button className="icon-button" aria-label="Dispensar mensagem" onClick={dismissNotice}><X size={18} /></button></div>;
@@ -28,8 +26,6 @@ function App() {
   if (isSessionLoading) return <div className="session-loading"><Brand /><span className="loading-dots"><span /><span /><span /></span><p>Preparando seu diário…</p></div>;
   if (!currentUser) return <>{retry}<AuthView />{feedback}</>;
 
-  const displayedPosts = feedType === 'global' ? posts : posts.filter(post => post.user.id === currentUser.id || post.user.isFollowing);
-  const openProfile = () => { setSelectedUser(currentUser); setActiveTab('profile'); };
   return (
     <div className={`app-shell ${Capacitor.isNativePlatform() ? 'native-app' : ''}`}>
       <a className="skip-link" href="#main-content">Ir para o conteúdo</a>
@@ -42,17 +38,15 @@ function App() {
           <div className="header-actions">
             <NotificationCenter />
             <button className="icon-button header-theme" type="button" aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={21} aria-hidden="true" /> : <Moon size={21} aria-hidden="true" />}</button>
-            <button className="header-avatar" onClick={openProfile} aria-label="Abrir meu perfil"><img src={currentUser.avatar} alt="" /></button>
           </div>
         </header>
         <main id="main-content" className="app-content">
           <ConnectionStatus />
           {retry}
           {activeTab === 'feed' && <PullToRefresh onRefresh={refreshData} isRefreshing={isRefreshing}>
-            <PageHeading title="Seu próximo destino começa aqui" description="Experiências reais de quem esteve lá." />
-            <div className="segmented-control feed-filter" aria-label="Filtrar relatos"><button aria-pressed={feedType === 'global'} onClick={() => setFeedType('global')}>Explorar</button><button aria-pressed={feedType === 'following'} onClick={() => setFeedType('following')}>Seguindo</button></div>
-            <div className="post-list">{displayedPosts.map(post => <PostCard key={post.id} post={post} />)}</div>
-            {!displayedPosts.length && <div className="empty-state"><MapPin size={32} /><h2>{feedType === 'following' ? 'Seu círculo começa com uma descoberta' : 'O primeiro relato pode ser seu'}</h2><p>{feedType === 'following' ? 'Encontre pessoas na busca e siga os diários que combinam com você.' : 'Conte uma experiência e ajude outras pessoas a escolher sua próxima parada.'}</p><button className="btn-primary" onClick={() => feedType === 'following' ? setActiveTab('search') : setActiveTab('create')}>{feedType === 'following' ? 'Encontrar pessoas' : 'Criar meu primeiro relato'}<ArrowRight size={16} /></button></div>}
+            <h1 className="sr-only">Relatos da comunidade</h1>
+            <div className="post-list">{posts.map(post => <PostCard key={post.id} post={post} />)}</div>
+            {!posts.length && <div className="empty-state"><MapPin size={32} /><h2>O primeiro relato pode ser seu</h2><p>Conte uma experiência e ajude outras pessoas a escolher sua próxima parada.</p><button className="btn-primary" onClick={() => setActiveTab('create')}>Criar meu primeiro relato<ArrowRight size={16} /></button></div>}
           </PullToRefresh>}
           <NewPostPage key={"draft:" + currentUser.id} active={activeTab === 'create'} />
           {activeTab === 'search' && <SearchView />}
@@ -61,7 +55,7 @@ function App() {
       </div>
       <BottomNav onOpenNewPost={() => setActiveTab('create')} />
       <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
-      <Dialog open={!!expandedPhotoUrl} onClose={() => setExpandedPhotoUrl(null)} title="Foto do relato" className="photo-dialog">{expandedPhotoUrl && <MediaImage src={expandedPhotoUrl} alt="Foto do relato ampliada" />}</Dialog>
+      <Dialog open={!!expandedPhotoUrl} onClose={() => setExpandedPhotoUrl(null)} title="Foto do relato" className="photo-dialog" backdropClassName="photo-viewer-backdrop">{expandedPhotoUrl && <MediaImage src={expandedPhotoUrl} alt="Foto do relato ampliada" />}</Dialog>
       {feedback}
     </div>
   );
